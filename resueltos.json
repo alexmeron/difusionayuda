@@ -1,0 +1,81 @@
+[
+  {
+    "id": "resuelto-1",
+    "contacto": "éter",
+    "localidad": "chapinería",
+    "desc": "gata con 4 crías"
+  },
+  {
+    "id": "resuelto-2",
+    "contacto": "elia",
+    "localidad": "robledo de chavela",
+    "desc": "ginebra"
+  },
+  {
+    "id": "resuelto-3",
+    "contacto": "rafa",
+    "localidad": "navas del rey",
+    "desc": "pinos 179"
+  },
+  {
+    "id": "resuelto-4",
+    "contacto": "sonia",
+    "localidad": "navalagamella"
+  },
+  {
+    "id": "resuelto-5",
+    "localidad": "fresnedilla",
+    "desc": "rampa para meter tres caballos"
+  },
+  {
+    "id": "resuelto-6",
+    "contacto": "maría",
+    "localidad": "villa del prado",
+    "desc": "cuatro perros"
+  },
+  {
+    "id": "resuelto-7",
+    "contacto": "aranzazu",
+    "localidad": "pelayos"
+  },
+  {
+    "id": "resuelto-8",
+    "contacto": "centro h",
+    "localidad": "escorial",
+    "desc": "110 caballos"
+  },
+  {
+    "id": "resuelto-9",
+    "contacto": "rosa",
+    "localidad": "robledo",
+    "desc": "quedado dos gatos en una casa"
+  },
+  {
+    "id": "resuelto-10",
+    "contacto": "vanessa",
+    "localidad": "robledo",
+    "desc": "tres perros"
+  },
+  {
+    "id": "resuelto-11",
+    "contacto": "arancha",
+    "desc": "ovejas quemadas"
+  },
+  {
+    "id": "resuelto-12",
+    "contacto": "araceli",
+    "localidad": "sotillo",
+    "desc": "8 perros"
+  },
+  {
+    "id": "resuelto-13",
+    "contacto": "marta",
+    "localidad": "chapinería",
+    "desc": "gallina"
+  },
+  {
+    "id": "resuelto-14",
+    "contacto": "camila",
+    "localidad": "cadalso"
+  }
+]

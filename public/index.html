@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🔥 Animales e Incendios — Monitor y Sistema de Matching</title>
+<meta name="description" content="Monitor en tiempo real y sistema inteligente de matching para coordinar ayuda a animales afectados por los incendios de Madrid.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Leaflet CSS y JS para Mapa Interactivo -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════  HERO  ═══════════════════════ -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-brand">
+      <span class="hero-fire">🔥</span>
+      <div>
+        <h1>Animales e Incendios</h1>
+        <p class="hero-sub">Monitor en tiempo real & Matching inteligente · <a href="https://incendio.sepv.es" target="_blank" rel="noopener">incendio.sepv.es</a></p>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat stat-rojo">
+        <span id="stat-necesita" class="stat-num">—</span>
+        <span class="stat-label">🆘 peticiones activas</span>
+      </div>
+      <div class="stat stat-verde">
+        <span id="stat-ofrece" class="stat-num">—</span>
+        <span class="stat-label">🤝 ofertas de ayuda</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de estado / refresh -->
+  <div class="status-bar">
+    <div class="status-left">
+      <span class="pulse-dot" id="pulse-dot"></span>
+      <span id="status-txt">Cargando…</span>
+    </div>
+    <div class="status-center">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <span class="countdown" id="countdown">60s</span>
+    </div>
+    <button class="btn-refresh" id="btn-refresh" aria-label="Actualizar ahora" onclick="fetchData(true)">
+      <span class="refresh-ico" id="refresh-ico">↻</span> Actualizar
+    </button>
+  </div>
+</header>
+
+<!-- ═══════════════════════  AVISO  ═══════════════════════ -->
+<div class="aviso-wrap">
+  <p class="aviso">⚠️ Si hay riesgo inmediato para personas, llama al <strong>112</strong>. Esta herramienta es solo para coordinar ayuda con animales entre particulares.</p>
+</div>
+
+<!-- ═══════════════════════  FILTROS  ═══════════════════════ -->
+<div class="filtros-wrap">
+  <!-- Búsqueda -->
+  <div class="search-wrap">
+    <span class="search-ico">🔍</span>
+    <input id="input-busqueda" type="search" class="search-input"
+      placeholder="Buscar por descripción, lugar, contacto…" autocomplete="off"
+      oninput="paginaActual = 1; renderFiltrado()">
+  </div>
+
+  <!-- Tipo -->
+  <div class="chips-row" role="group" aria-label="Tipo de anuncio">
+    <button id="btn-tipo-todos"    class="chip chip-tipo activo-tipo" data-tipo=""         onclick="setTipo('')">Todos</button>
+    <button id="btn-tipo-necesito" class="chip chip-tipo"             data-tipo="necesito" onclick="setTipo('necesito')">🆘 Necesitan</button>
+    <button id="btn-tipo-ofrezco"  class="chip chip-tipo"             data-tipo="ofrezco"  onclick="setTipo('ofrezco')">🤝 Ofrecen</button>
+    <button id="btn-tipo-matching" class="chip chip-tipo chip-matching" data-tipo="matching" onclick="setTipo('matching')">🎯 Emparejamientos (Matching)</button>
+  </div>
+
+  <!-- Categorías -->
+  <div class="chips-row chips-cat" role="group" aria-label="Categoría">
+    <button id="btn-cat-todas"       class="chip chip-cat activo-cat" data-cat=""            onclick="setCat('')">🔍 Todas</button>
+    <button id="btn-cat-perros"      class="chip chip-cat"            data-cat="perros"      onclick="setCat('perros')">🐕 Perros</button>
+    <button id="btn-cat-gatos"       class="chip chip-cat"            data-cat="gatos"       onclick="setCat('gatos')">🐈 Gatos</button>
+    <button id="btn-cat-caballos"    class="chip chip-cat"            data-cat="caballos"    onclick="setCat('caballos')">🐎 Caballos</button>
+    <button id="btn-cat-ganado"      class="chip chip-cat"            data-cat="ganado"      onclick="setCat('ganado')">🐄 Ganado</button>
+    <button id="btn-cat-aves"        class="chip chip-cat"            data-cat="aves"        onclick="setCat('aves')">🐦 Aves</button>
+    <button id="btn-cat-transporte"  class="chip chip-cat"            data-cat="transporte"  onclick="setCat('transporte')">🚛 Transporte</button>
+    <button id="btn-cat-alojamiento" class="chip chip-cat"            data-cat="alojamiento" onclick="setCat('alojamiento')">🏠 Alojamiento</button>
+    <button id="btn-cat-pienso"      class="chip chip-cat"            data-cat="pienso"      onclick="setCat('pienso')">🌾 Pienso</button>
+    <button id="btn-cat-veterinaria" class="chip chip-cat"            data-cat="veterinaria" onclick="setCat('veterinaria')">🩺 Veterinaria</button>
+    <button id="btn-cat-otros"       class="chip chip-cat"            data-cat="otros"       onclick="setCat('otros')">📦 Otros</button>
+  </div>
+
+  <!-- Provincia y Opciones -->
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+    <select id="select-provincia" class="prov-select" aria-label="Filtrar por provincia" onchange="setProvincia(this.value)">
+      <option value="">Todas las provincias</option>
+      <option>A Coruña</option><option>Álava</option><option>Albacete</option><option>Alicante</option>
+      <option>Almería</option><option>Asturias</option><option>Ávila</option><option>Badajoz</option>
+      <option>Barcelona</option><option>Burgos</option><option>Cáceres</option><option>Cádiz</option>
+      <option>Cantabria</option><option>Castellón</option><option>Ceuta</option><option>Ciudad Real</option>
+      <option>Córdoba</option><option>Cuenca</option><option>Girona</option><option>Granada</option>
+      <option>Guadalajara</option><option>Guipúzcoa</option><option>Huelva</option><option>Huesca</option>
+      <option>Islas Baleares</option><option>Jaén</option><option>La Rioja</option><option>Las Palmas</option>
+      <option>León</option><option>Lleida</option><option>Lugo</option><option>Madrid</option>
+      <option>Málaga</option><option>Melilla</option><option>Murcia</option><option>Navarra</option>
+      <option>Ourense</option><option>Palencia</option><option>Pontevedra</option><option>Salamanca</option>
+      <option>Santa Cruz de Tenerife</option><option>Segovia</option><option>Sevilla</option><option>Soria</option>
+      <option>Tarragona</option><option>Teruel</option><option>Toledo</option><option>Valencia</option>
+      <option>Valladolid</option><option>Vizcaya</option><option>Zamora</option><option>Zaragoza</option>
+    </select>
+
+    <label class="check-wrap">
+      <input type="checkbox" id="check-ocultar-resueltos" checked onchange="setOcultarResueltos(this.checked)">
+      <span>Ocultar solucionados</span>
+    </label>
+
+    <!-- Botón Toggle Mapa en Sección Matching -->
+    <button id="btn-toggle-mapa" class="btn-toggle-mapa" style="display:none;" onclick="toggleMapaMatching()">
+      🗺️ Ver en Mapa
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════  MAPA MATCHING CONTAINER  ═══════════════════════ -->
+<div id="mapa-matching-wrap" class="mapa-matching-wrap" hidden>
+  <div id="mapa-matching"></div>
+</div>
+
+<!-- ═══════════════════════  GRID  ═══════════════════════ -->
+<main id="grid" class="grid" aria-live="polite" aria-label="Listado de anuncios"></main>
+
+<!-- ═══════════════════════  PAGINACIÓN  ═══════════════════════ -->
+<div id="paginacion-wrap" class="paginacion-wrap" hidden></div>
+
+<!-- ═══════════════════════  MODAL MATCHING  ═══════════════════════ -->
+<div id="modal-match" class="modal-overlay" onclick="if(event.target===this) cerrarModalMatch()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div>
+        <h2 id="modal-title" style="font-size:1.3rem; margin:0; font-family:'Bricolage Grotesque',sans-serif;">🎯 Ayuda compatible mas cercana</h2>
+        <p id="modal-sub" style="font-size:.82rem; color:var(--gtxt); margin:.2rem 0 0;"></p>
+      </div>
+      <button class="btn-cerrar-modal" onclick="cerrarModalMatch()">×</button>
+    </div>
+    <div id="modal-body" style="display:flex; flex-direction:column; gap:1.2rem;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════  TOAST NOTIFICACIÓN  ═══════════════════════ -->
+<div id="toast-notif" class="toast-notif" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

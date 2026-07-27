@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🔐 Panel de Control — Gestión de Anuncios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.admin-login-wrap {
+  max-width: 420px;
+  margin: 6rem auto;
+  padding: 2rem;
+  background: var(--g1);
+  border: 1.5px solid var(--g3);
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+.admin-input {
+  width: 100%;
+  background: var(--oscuro);
+  border: 1.5px solid var(--g3);
+  border-radius: 10px;
+  padding: .75rem 1rem;
+  color: var(--blanco);
+  font-size: 1rem;
+  margin: 1rem 0;
+  outline: none;
+  font-family: inherit;
+}
+.admin-input:focus { border-color: var(--naranja); }
+.btn-admin-login {
+  width: 100%;
+  background: var(--naranja);
+  color: #111;
+  border: none;
+  padding: .75rem;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: .95rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity .2s;
+}
+.btn-admin-login:hover { opacity: .9; }
+
+.admin-header {
+  max-width: 1200px;
+  margin: 2rem auto 1.5rem;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.admin-table-wrap {
+  max-width: 1200px;
+  margin: 0 auto 3rem;
+  padding: 0 1.5rem;
+}
+.admin-card {
+  background: var(--g1);
+  border: 1.5px solid var(--g3);
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  transition: border-color .2s;
+}
+.admin-card.is-oculto {
+  border-color: rgba(230,57,70,.4);
+  background: rgba(230,57,70,.04);
+}
+.btn-toggle-admin {
+  padding: .5rem 1.1rem;
+  border-radius: 999px;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .2s;
+  border: 1.5px solid transparent;
+  white-space: nowrap;
+}
+.btn-toggle-activo {
+  background: rgba(42,157,143,.15);
+  color: #60e0d5;
+  border-color: rgba(42,157,143,.4);
+}
+.btn-toggle-activo:hover {
+  background: rgba(230,57,70,.2);
+  color: #ff9090;
+  border-color: var(--rojo);
+}
+.btn-toggle-oculto {
+  background: rgba(230,57,70,.2);
+  color: #ff9090;
+  border-color: var(--rojo);
+}
+.btn-toggle-oculto:hover {
+  background: rgba(42,157,143,.2);
+  color: #60e0d5;
+  border-color: var(--verde);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════  LOGIN FORM  ═══════════════════════ -->
+<div id="section-login" class="admin-login-wrap">
+  <span style="font-size:3rem">🔐</span>
+  <h2 style="font-family:'Bricolage Grotesque',sans-serif; margin:.5rem 0 0;">Panel de Administración</h2>
+  <p style="font-size:.82rem; color:var(--gtxt); margin-top:.2rem;">Introduce la contraseña para gestionar los anuncios.</p>
+  <form onsubmit="event.preventDefault(); loginAdmin()">
+    <input type="password" id="admin-pass-input" class="admin-input" placeholder="Contraseña de admin" autofocus autocomplete="current-password">
+    <button type="submit" class="btn-admin-login">Acceder al Panel</button>
+  </form>
+  <p id="login-error" style="color:var(--rojo); font-size:.82rem; margin-top:.8rem;" hidden></p>
+  <p style="font-size:.75rem; color:var(--gtxt); margin-top:1.5rem;"><a href="/" style="color:var(--naranja); text-decoration:none;">← Volver al sitio público</a></p>
+</div>
+
+<!-- ═══════════════════════  ADMIN DASHBOARD  ═══════════════════════ -->
+<div id="section-dashboard" hidden>
+  <div class="admin-header">
+    <div>
+      <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-size:1.8rem; margin:0;">🔐 Gestor de Anuncios y Resueltos</h1>
+      <p style="font-size:.85rem; color:var(--gtxt); margin:.2rem 0 0;">Verifica las notificaciones de usuarios o gestiona la visibilidad a mano.</p>
+    </div>
+    <div style="display:flex; gap:.8rem; align-items:center;">
+      <a href="/" target="_blank" class="btn-pag" style="text-decoration:none;">🌐 Ver Web Pública</a>
+      <button onclick="logoutAdmin()" class="btn-pag" style="color:var(--rojo); border-color:rgba(230,57,70,.4);">Cerrar Sesión</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════  SECCIÓN DE REPORTES PENDIENTES  ═══════════════════════ -->
+  <div id="admin-reportes-wrap" style="max-width:1200px; margin:0 auto 1.5rem; padding:0 1.5rem;" hidden>
+    <div class="reportes-box">
+      <h3 style="font-size:1.1rem; color:var(--naranja); margin:0 0 .8rem; display:flex; align-items:center; gap:.5rem;">
+        🔔 Notificaciones de Usuarios (<span id="cnt-reportes">0</span> pendientes de verificación)
+      </h3>
+      <div id="admin-reportes-list" style="display:flex; flex-direction:column; gap:.8rem;"></div>
+    </div>
+  </div>
+
+  <!-- Filtros admin -->
+  <div class="filtros-wrap">
+    <!-- Búsqueda -->
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input id="admin-busqueda" type="search" class="search-input"
+        placeholder="Buscar por contacto, descripción, provincia…" oninput="renderAdminList()">
+    </div>
+
+    <!-- Filtro por Tipo y Checkbox -->
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+      <div class="chips-row" role="group" aria-label="Filtro por tipo">
+        <button id="atipo-todos"    class="chip chip-tipo activo-tipo" onclick="setAdminTipo('')">Todos los tipos</button>
+        <button id="atipo-necesito" class="chip chip-tipo"             onclick="setAdminTipo('necesito')">🆘 Necesitan (<span id="acnt-necesito">0</span>)</button>
+        <button id="atipo-ofrezco"  class="chip chip-tipo"             onclick="setAdminTipo('ofrezco')">🤝 Ofrecen (<span id="acnt-ofrezco">0</span>)</button>
+      </div>
+
+      <label class="check-wrap">
+        <input type="checkbox" id="admin-check-ocultar-resueltos" checked onchange="setAdminOcultarResueltos(this.checked)">
+        <span>Ocultar solucionados</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="admin-table-wrap">
+    <div id="admin-list"></div>
+  </div>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>
