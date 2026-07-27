@@ -22,14 +22,14 @@ const RESUELTOS_DEFAULT = [
 const ADMIN_PASSWORD = 'R8J5WXL5 25%';
 
 function parseFechaSeg(texto) {
-  const m = texto.match(/(\d+)\s*(seg|min|h\b|hora|d[íi]a)/i)
-  if (!m) return 0
-  const v = parseInt(m[1]), u = m[2].toLowerCase()
-  if (u.startsWith('seg'))  return v
-  if (u.startsWith('min'))  return v * 60
-  if (u.startsWith('h'))    return v * 3600
-  if (u.startsWith('d'))    return v * 86400
-  return 0
+  const m = texto.match(/(\d+)\s*(seg|min|h\b|hora|d[íi]a)/i);
+  if (!m) return 0;
+  const v = parseInt(m[1]), u = m[2].toLowerCase();
+  if (u.startsWith('seg'))  return v;
+  if (u.startsWith('min'))  return v * 60;
+  if (u.startsWith('h'))    return v * 3600;
+  if (u.startsWith('d'))    return v * 86400;
+  return 0;
 }
 
 function parseHTMLTarjeta(htmlStr, tipoDefault) {
@@ -102,10 +102,10 @@ export default {
         const anuncios = [...listaNec, ...listaOff].sort((a, b) => a.fechaSeg - b.fechaSeg);
 
         let totalNecesita = 71, totalOfrece = 2515;
-        const necNumMatch = htmlNec.match(/solicitud|peticion[\s\S]*?<b>(\d+)</b>/i);
+        const necNumMatch = htmlNec.match(/peticion[\s\S]*?<b>(\d+)<\/b>/i);
         if (necNumMatch) totalNecesita = parseInt(necNumMatch[1]);
 
-        const offNumMatch = htmlOff.match(/oferta|ayuda[\s\S]*?<b>(\d+)</b>/i);
+        const offNumMatch = htmlOff.match(/oferta[\s\S]*?<b>(\d+)<\/b>/i);
         if (offNumMatch) totalOfrece = parseInt(offNumMatch[1]);
 
         return new Response(JSON.stringify({
