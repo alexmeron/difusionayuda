@@ -81,6 +81,19 @@ function parseHTMLTarjeta(htmlStr, tipoDefault) {
   return lista;
 }
 
+function extraerNumeroContador(htmlStr, keyword) {
+  const idx = htmlStr.toLowerCase().indexOf(keyword);
+  if (idx === -1) return 0;
+  const sub = htmlStr.slice(idx, idx + 300);
+  const bStart = sub.indexOf('<b>');
+  const bEnd = sub.indexOf('</b>');
+  if (bStart !== -1 && bEnd !== -1 && bEnd > bStart) {
+    const val = parseInt(sub.slice(bStart + 3, bEnd).trim());
+    if (!isNaN(val)) return val;
+  }
+  return 0;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -101,12 +114,8 @@ export default {
         const listaOff = parseHTMLTarjeta(htmlOff, 'ofrezco');
         const anuncios = [...listaNec, ...listaOff].sort((a, b) => a.fechaSeg - b.fechaSeg);
 
-        let totalNecesita = 71, totalOfrece = 2515;
-        const necNumMatch = htmlNec.match(/peticion[\s\S]*?<b>(\d+)<\/b>/i);
-        if (necNumMatch) totalNecesita = parseInt(necNumMatch[1]);
-
-        const offNumMatch = htmlOff.match(/oferta[\s\S]*?<b>(\d+)<\/b>/i);
-        if (offNumMatch) totalOfrece = parseInt(offNumMatch[1]);
+        let totalNecesita = extraerNumeroContador(htmlNec, 'peticion') || 71;
+        let totalOfrece = extraerNumeroContador(htmlOff, 'oferta') || 2515;
 
         return new Response(JSON.stringify({
           anuncios,
