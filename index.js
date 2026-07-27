@@ -191,9 +191,30 @@ function extraerNumeroContador(htmlStr, keyword) {
   return 0;
 }
 
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      ...corsHeaders
+    }
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
 
     // API Routes
     if (url.pathname === '/api/anuncios') {
@@ -214,15 +235,14 @@ export default {
         let totalNecesita = extraerNumeroContador(htmlNec, 'peticion') || 71;
         let totalOfrece = extraerNumeroContador(htmlOff, 'oferta') || 2515;
 
-        return new Response(JSON.stringify({
+        return jsonResponse({
           anuncios,
           totalNecesita,
           totalOfrece,
           resueltos: globalThis.inMemoryResueltos || RESUELTOS_DEFAULT,
-          ultimaActualizacion: new Date().toISOString()
-        }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          ultimaActualizacion: new Date().toISOString()});
       } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        return jsonResponse({ error: err.message }, 500);
       }
     }
 
@@ -235,7 +255,7 @@ export default {
       try {
         const body = await request.json();
         const { id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp } = body;
-        if (!id) return new Response(JSON.stringify({ ok: false, error: 'Falta ID' }), { status: 400 });
+        if (!id) return jsonResponse({ ok: false, error: 'Falta ID' }, 400);
         
         const existe = globalThis.inMemoryReportes.find(r => r.id === id);
         if (!existe) {
@@ -244,34 +264,34 @@ export default {
             fechaReporte: new Date().toISOString()
           });
         }
-        return new Response(JSON.stringify({ ok: true, msg: 'Reporte registrado para verificación del admin' }), { headers: { 'Content-Type': 'application/json' } });
+        return jsonResponse({ ok: true, msg: 'Reporte registrado para verificación del admin' });
       } catch (err) {
-        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        return jsonResponse({ ok: false, error: err.message }, 500);
       }
     }
 
     if (url.pathname === '/api/admin/reportes' && request.method === 'GET') {
       const p = url.searchParams.get('password');
-      if (!isPassValid(p)) return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
-      return new Response(JSON.stringify(globalThis.inMemoryReportes), { headers: { 'Content-Type': 'application/json' } });
+      if (!isPassValid(p)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+      return jsonResponse(globalThis.inMemoryReportes);
     }
 
     if (url.pathname === '/api/admin/descartar-reporte' && request.method === 'POST') {
       try {
         const { password, id } = await request.json();
-        if (!isPassValid(password)) return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
+        if (!isPassValid(password)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
         
         globalThis.inMemoryReportes = globalThis.inMemoryReportes.filter(r => r.id !== id);
-        return new Response(JSON.stringify({ ok: true, reportes: globalThis.inMemoryReportes }), { headers: { 'Content-Type': 'application/json' } });
+        return jsonResponse({ ok: true, reportes: globalThis.inMemoryReportes });
       } catch (err) {
-        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        return jsonResponse({ ok: false, error: err.message }, 500);
       }
     }
 
     if (url.pathname === '/api/admin/toggle-resuelto' && request.method === 'POST') {
       try {
         const { password, id, contacto, localidad, desc } = await request.json();
-        if (!isPassValid(password)) return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
+        if (!isPassValid(password)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
         
         const existeIdx = globalThis.inMemoryResueltos.findIndex(item => item.id === id);
         let resuelto = false;
@@ -284,14 +304,14 @@ export default {
           resuelto = true;
         }
         
-        return new Response(JSON.stringify({ ok: true, resuelto, lista: globalThis.inMemoryResueltos }), { headers: { 'Content-Type': 'application/json' } });
+        return jsonResponse({ ok: true, resuelto, lista: globalThis.inMemoryResueltos });
       } catch (err) {
-        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        return jsonResponse({ ok: false, error: err.message }, 500);
       }
     }
 
     if (url.pathname === '/api/resueltos') {
-      return new Response(JSON.stringify(globalThis.inMemoryResueltos || RESUELTOS_DEFAULT), { headers: { 'Content-Type': 'application/json' } });
+      return jsonResponse(globalThis.inMemoryResueltos || RESUELTOS_DEFAULT);
     }
 
     if (url.pathname === '/api/admin/login' && request.method === 'POST') {
@@ -300,10 +320,10 @@ export default {
         let passDecoded = password;
         try { passDecoded = decodeURIComponent(password); } catch(e){}
         if (password === ADMIN_PASSWORD || passDecoded === ADMIN_PASSWORD || password === 'R8J5WXL5%2025%') {
-          return new Response(JSON.stringify({ ok: true, token: 'admin-token' }), { headers: { 'Content-Type': 'application/json' } });
+          return jsonResponse({ ok: true, token: 'admin-token' });
         }
       } catch(e){}
-      return new Response(JSON.stringify({ ok: false, error: 'Contraseña incorrecta' }), { status: 401 });
+      return jsonResponse({ ok: false, error: 'Contraseña incorrecta' }, 401);
     }
 
     // Servir estáticos desde el binding ASSETS
