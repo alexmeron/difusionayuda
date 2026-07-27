@@ -941,7 +941,7 @@ function tarjetaHTML(a) {
           ${a.whatsapp ? `<a href="${escHtml(a.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap" id="wasap-${escHtml(a.id)}">💬 WhatsApp</a>` : ''}
           </div>
             </div>
-      ${esNecesita && !resuelto ? `<button class="btn-solucionado-card" style="background:rgba(42,157,143,.1); color:#60e0d5; border: 1.5px solid rgba(42,157,143,.3); padding:.5rem; margin-top:.8rem; width:100%; border-radius:8px; font-size:.8rem; font-weight:700; cursor:pointer; transition: all 0.2s; display:block;" onmouseover="this.style.background='rgba(42,157,143,.2)'; this.style.borderColor='rgba(42,157,143,.5)'" onmouseout="this.style.background='rgba(42,157,143,.1)'; this.style.borderColor='rgba(42,157,143,.3)'" onclick="reportarResuelto('${a.id}')">✅ Marcar como solucionado</button>` : ''}
+      ${esNecesita && !resuelto ? `<button class="btn-solucionado-card" style="background:rgba(42,157,143,.1); color:#60e0d5; border: 1.5px solid rgba(42,157,143,.3); padding:.5rem; margin-top:.8rem; width:100%; border-radius:8px; font-size:.8rem; font-weight:700; cursor:pointer; transition: all 0.2s; display:block;" onmouseover="this.style.background='rgba(42,157,143,.2)'; this.style.borderColor='rgba(42,157,143,.5)'" onmouseout="this.style.background='rgba(42,157,143,.1)'; this.style.borderColor='rgba(42,157,143,.3)'" onclick="reportarResueltoUsuario('${a.id}', this)">✅ Marcar como solucionado</button>` : ''}
     </article>`
 }
 
