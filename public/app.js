@@ -56,65 +56,134 @@ function esResuelto(anuncio) {
 
 // ── COORDENADAS DE MUNICIPIOS Y GEOLOCALIZACIÓN ──────────────────────────────
 const MUNICIPIO_COORDS = {
-  // Madrid - Sierra Oeste y alrededores
-  'robledo de chavela': [40.5019, -4.2403],
-  'robledo': [40.5019, -4.2403],
-  'navas del rey': [40.3861, -4.2536],
-  'pelayos de la presa': [40.3606, -4.3314],
-  'pelayos': [40.3606, -4.3314],
-  'chapineria': [40.3800, -4.2086],
-  'navalagamella': [40.4689, -4.1239],
-  'villa del prado': [40.2764, -4.3061],
-  'cadalso de los vidrios': [40.3014, -4.4419],
-  'cadalso': [40.3014, -4.4419],
-  'el escorial': [40.5822, -4.1278],
-  'escorial': [40.5822, -4.1278],
-  'san martin de valdeiglesias': [40.3622, -4.3986],
-  'san martin': [40.3622, -4.3986],
-  'valdemorillo': [40.4694, -4.0667],
-  'alcorcon': [40.3458, -3.8249],
-  'boalo': [40.7186, -3.9211],
-  'el boalo': [40.7186, -3.9211],
-  'soto del real': [40.7522, -3.7844],
-  'buitrago': [40.9933, -3.6339],
-  'rivas': [40.3526, -3.5358],
-  'rivas vaciamadrid': [40.3526, -3.5358],
-  'madrid': [40.4168, -3.7038],
-  'aluche': [40.3847, -3.7606],
+  // Madrid Capital, Distritos y Área Metropolitana
+  'madrid':                  [40.4168, -3.7038],
+  'aluche':                  [40.3847, -3.7606],
+  'carabanchel':             [40.3750, -3.7430],
+  'vallecas':                [40.3833, -3.6500],
+  'villaverde':              [40.3450, -3.7000],
+  'hortaleza':               [40.4700, -3.6500],
+  'tetuan':                  [40.4600, -3.7000],
+  'chamberi':                [40.4350, -3.7000],
+  'moncloa':                 [40.4400, -3.7300],
+  'latin':                   [40.3900, -3.7500],
+  'fuencarral':              [40.4900, -3.7000],
+
+  'alcorcon':                [40.3458, -3.8249],
+  'alcorcón':                [40.3458, -3.8249],
+  'mostoles':                [40.3228, -3.8647],
+  'móstoles':                [40.3228, -3.8647],
+  'leganes':                 [40.3281, -3.7636],
+  'leganés':                 [40.3281, -3.7636],
+  'fuenlabrada':             [40.2842, -3.7942],
+  'getafe':                  [40.3083, -3.7328],
+  'parla':                   [40.2372, -3.7744],
+  'valdemoro':               [40.1908, -3.6764],
+  'pinto':                   [40.2411, -3.6989],
+  'rivas':                   [40.3526, -3.5358],
+  'rivas vaciamadrid':       [40.3526, -3.5358],
   'san sebastian de los reyes': [40.5471, -3.6262],
-  'lozoyuela': [40.9272, -3.6192],
+  'alcobendas':              [40.5475, -3.6420],
+  'coslada':                 [40.4258, -3.5647],
+  'san fernando de henares': [40.4250, -3.5350],
+  'torrejon de ardoz':       [40.4597, -3.4800],
+  'alcala de henares':       [40.4819, -3.3642],
+
+  // Sierra Oeste de Madrid & Alberche / Guadarrama
+  'aldea del fresno':        [40.3236, -4.2028],
+  'aldea':                   [40.3236, -4.2028],
+  'villanueva del pardillo': [40.4905, -3.9632],
+  'pardillo':                [40.4905, -3.9632],
+  'villanueva de la canada': [40.4469, -4.0042],
+  'villanueva de la cañada': [40.4469, -4.0042],
+  'brunete':                 [40.4042, -3.9986],
+  'navalcarnero':            [40.2872, -4.0152],
+  'sevilla la nueva':        [40.3475, -4.0256],
+  'villaviciosa de odon':    [40.3581, -3.9008],
+  'villaviciosa de odón':    [40.3581, -3.9008],
+  'villaviciosa':            [40.3581, -3.9008],
+  'boadilla del monte':      [40.4069, -3.8825],
+  'boadilla':                [40.4069, -3.8825],
+  'majadahonda':             [40.4736, -3.8719],
+  'las rozas':               [40.4925, -3.8739],
+  'las rozas de madrid':     [40.4925, -3.8739],
+  'rozas':                   [40.4925, -3.8739],
+  'pozuelo de alarcon':      [40.4358, -3.8139],
+  'pozuelo de alarcón':     [40.4358, -3.8139],
+  'pozuelo':                 [40.4358, -3.8139],
+  'robledo de chavela':      [40.5019, -4.2403],
+  'robledo':                 [40.5019, -4.2403],
+  'navas del rey':           [40.3861, -4.2536],
+  'navas':                   [40.3861, -4.2536],
+  'chapineria':              [40.3800, -4.2086],
+  'chapinería':             [40.3800, -4.2086],
+  'navalagamella':           [40.4689, -4.1239],
+  'villa del prado':         [40.2764, -4.3061],
+  'pelayos de la presa':     [40.3606, -4.3314],
+  'pelayos':                 [40.3606, -4.3314],
+  'san martin de valdeiglesias': [40.3622, -4.3986],
+  'san martín de valdeiglesias': [40.3622, -4.3986],
+  'san martin':              [40.3622, -4.3986],
+  'cadalso de los vidrios':  [40.3014, -4.4419],
+  'cadalso':                 [40.3014, -4.4419],
+  'cenicientos':             [40.2583, -4.4639],
+  'rozas de puerto real':    [40.3092, -4.4897],
+  'el escorial':             [40.5822, -4.1278],
+  'escorial':                [40.5822, -4.1278],
+  'san lorenzo de el escorial': [40.5906, -4.1481],
+  'san lorenzo':             [40.5906, -4.1481],
+  'valdemorillo':            [40.4694, -4.0667],
+  'colmenarejo':             [40.5583, -4.0139],
+  'galapagar':               [40.5786, -4.0044],
+  'torrelodones':            [40.5764, -3.8306],
+  'collado villalba':        [40.6406, -4.0086],
+  'villalba':                [40.6406, -4.0086],
+  'alpedrete':               [40.5833, -4.0167],
+  'moralzarzal':             [40.6789, -3.9681],
+  'guadarrama':              [40.6728, -4.0886],
+  'cercedilla':              [40.7389, -4.0544],
+  'becerril de la sierra':   [40.7072, -4.0181],
+  'el boalo':                [40.7186, -3.9211],
+  'boalo':                   [40.7186, -3.9211],
+  'soto del real':           [40.7522, -3.7844],
+  'buitrago':                [40.9933, -3.6339],
+  'lozoyuela':               [40.9272, -3.6192],
 
   // Ávila / Tiétar
-  'sotillo de la adrada': [40.2825, -4.5847],
-  'sotillo': [40.2825, -4.5847],
-  'arenas de san pedro': [40.2089, -5.0864],
-  'piedralaves': [40.3139, -4.6975],
-  'navas del marques': [40.6022, -4.3314],
-  'almorox': [40.2369, -4.4578],
-  'casavieja': [40.2794, -4.7672],
-  'casillas': [40.3283, -4.5714],
-  'la adrada': [40.2986, -4.6347],
-  'avila': [40.6567, -4.6814],
+  'sotillo de la adrada':    [40.2825, -4.5847],
+  'sotillo':                 [40.2825, -4.5847],
+  'la adrada':               [40.2989, -4.6367],
+  'adrada':                  [40.2989, -4.6367],
+  'piedralaves':             [40.3139, -4.6975],
+  'casillas':                [40.3200, -4.5700],
+  'santa maria del tietar':  [40.3000, -4.5500],
+  'fresnedilla':             [40.3167, -4.6167],
+  'higuera de las duenas':   [40.2417, -4.6000],
+  'el tiemblo':              [40.4136, -4.5003],
+  'tiemblo':                 [40.4136, -4.5003],
+  'cebreros':                [40.4558, -4.4639],
+  'navas del marques':       [40.6022, -4.3314],
+  'lanzahita':               [40.2117, -4.9333],
+  'arenas de san pedro':     [40.2089, -5.0864],
+  'arenas':                  [40.2089, -5.0864],
+  'avila':                   [40.6567, -4.6814],
+  'ávila':                   [40.6567, -4.6814],
 
-  // Toledo
-  'ugena': [40.1578, -3.8797],
-  'illescas': [40.1239, -3.8472],
-  'toledo': [39.8628, -4.0273],
-
-  // Castellón
-  'gilet': [39.6789, -0.3225],
-  'castellon': [39.9864, -0.0513],
-  'castello de la plana': [39.9864, -0.0513],
-
-  // Otros
-  'oquendo': [43.0886, -3.0456],
-  'guriezo': [43.3425, -3.3281],
-  'amoroto': [43.3267, -2.5147],
-  'bilbao': [43.2630, -2.9350],
-  'sant cugat del valles': [41.4722, 2.0861],
-  'barcelona': [41.3851, 2.1734],
-  'benalmadena': [36.5989, -4.5169],
-  'malaga': [36.7213, -4.4214]
+  // Toledo Norte / Comarca de Torrijos / Talavera
+  'almorox':                 [40.2369, -4.4578],
+  'escalona':                [40.1667, -4.4000],
+  'maqueda':                 [40.0667, -4.3667],
+  'torrijos':                [39.9833, -4.2833],
+  'mentrida':                [40.2378, -4.1956],
+  'méntrida':                [40.2378, -4.1956],
+  'santa cruz del retamar':  [40.1206, -4.2389],
+  'las ventas de retamosa':  [40.1558, -4.1136],
+  'valmojado':               [40.2044, -4.0911],
+  'casarrubios del monte':   [40.1872, -4.0375],
+  'chozas de canales':       [40.0983, -4.0436],
+  'talavera de la reina':    [39.9628, -4.8308],
+  'talavera':                [39.9628, -4.8308],
+  'toledo':                  [39.8628, -4.0273]
 }
 
 const PROVINCIA_COORDS = {
@@ -134,16 +203,26 @@ function obtenerCoordenadas(localidad, provincia, descripcion) {
   const prov = norm(provincia)
   const desc = norm(descripcion)
 
-  for (const k in MUNICIPIO_COORDS) {
-    if (loc && loc.includes(k)) return MUNICIPIO_COORDS[k]
+  // 1. Coincidencia exacta o parcial en nombre del municipio
+  if (loc) {
+    for (const k in MUNICIPIO_COORDS) {
+      if (loc.includes(k) || k.includes(loc)) return MUNICIPIO_COORDS[k]
+    }
   }
-  for (const k in MUNICIPIO_COORDS) {
-    if (desc && desc.includes(k)) return MUNICIPIO_COORDS[k]
+
+  // 2. Coincidencia en el texto de la descripción
+  if (desc) {
+    for (const k in MUNICIPIO_COORDS) {
+      if (k.length > 3 && desc.includes(k)) return MUNICIPIO_COORDS[k]
+    }
   }
+
+  // 3. Fallback por provincia
   for (const k in PROVINCIA_COORDS) {
     if (prov && prov.includes(k)) return PROVINCIA_COORDS[k]
   }
-  return null
+
+  return PROVINCIA_COORDS['madrid'] || [40.4168, -3.7038]
 }
 
 function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
@@ -169,9 +248,19 @@ function calcularMatchScore(necesidad, oferta) {
 
   if (cNec && cOff) {
     distanciaKm = calcularDistanciaKm(cNec[0], cNec[1], cOff[0], cOff[1])
-    if (distanciaKm === 0) {
+    const loc1Norm = norm(necesidad.localidad)
+    const loc2Norm = norm(oferta.localidad)
+    const sonMismoPueblo = loc1Norm && loc2Norm && (loc1Norm.includes(loc2Norm) || loc2Norm.includes(loc1Norm))
+
+    if (distanciaKm === 0 && sonMismoPueblo) {
       score += 55
       razones.push(`📏 En el mismo municipio (~0 km)`)
+    } else if (distanciaKm <= 15) {
+      score += 50
+      razones.push(`📏 Muy cercano (~${distanciaKm} km)`)
+    } else if (distanciaKm <= 35) {
+      score += 38
+      razones.push(`📏 Distancia cercana (~${distanciaKm} km)`)
     } else if (distanciaKm <= 15) {
       score += 50
       razones.push(`📏 Muy cercano (~${distanciaKm} km)`)
