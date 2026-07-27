@@ -1,4 +1,3 @@
-
 const RESUELTOS_DEFAULT = [
   { contacto: 'éter',    localidad: 'chapinería',          desc: 'gata con 4 crías' },
   { contacto: 'elia',    localidad: 'robledo de chavela',  desc: 'ginebra' },
@@ -17,19 +16,19 @@ const RESUELTOS_DEFAULT = [
 ];
 
 function parseFechaSeg(texto) {
-  const m = texto.match(/(\d+)\s*(seg|min|h\b|hora|d[íi]a)/i)
-  if (!m) return 0
-  const v = parseInt(m[1]), u = m[2].toLowerCase()
-  if (u.startsWith('seg'))  return v
-  if (u.startsWith('min'))  return v * 60
-  if (u.startsWith('h'))    return v * 3600
-  if (u.startsWith('d'))    return v * 86400
-  return 0
+  const m = texto.match(/(\d+)\s*(seg|min|h\b|hora|d[íi]a)/i);
+  if (!m) return 0;
+  const v = parseInt(m[1]), u = m[2].toLowerCase();
+  if (u.startsWith('seg'))  return v;
+  if (u.startsWith('min'))  return v * 60;
+  if (u.startsWith('h'))    return v * 3600;
+  if (u.startsWith('d'))    return v * 86400;
+  return 0;
 }
 
 function parseHTMLTarjeta(htmlStr, tipoDefault) {
   const lista = [];
-  const cardRegex = /<article[^>]*class="[^"]*tarjeta[^"]*"[sS]*?</article>/gi;
+  const cardRegex = /<article[^>]*class="[^"]*tarjeta[^"]*"[\s\S]*?<\/article>/gi;
   let match;
   let i = 0;
   while ((match = cardRegex.exec(htmlStr)) !== null) {
@@ -37,22 +36,22 @@ function parseHTMLTarjeta(htmlStr, tipoDefault) {
     const esNecesito = cardHtml.includes('necesito');
     const tipo = esNecesito ? 'necesito' : (tipoDefault || 'ofrezco');
 
-    const catMatch = cardHtml.match(/<h2[^>]*>([sS]*?)</h2>/i);
+    const catMatch = cardHtml.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
     const catRaw = catMatch ? catMatch[1].replace(/<[^>]+>/g, '').trim() : '';
     const catEmoji = catRaw.match(/^\S+/)?.[0] ?? '';
     const categoria = catRaw.replace(/^\S+\s*/, '').trim();
 
-    const lugMatch = cardHtml.match(/class="tarjeta-lugar"[^>]*>([sS]*?)</p>/i);
+    const lugMatch = cardHtml.match(/class="tarjeta-lugar"[^>]*>([\s\S]*?)<\/p>/i);
     const lugTxt = lugMatch ? lugMatch[1].replace(/<[^>]+>/g, '').replace('📍','').trim() : '';
     const partes = lugTxt.split('·').map(s => s.trim());
 
-    const descMatch = cardHtml.match(/class="tarjeta-desc"[^>]*>([sS]*?)</p>/i);
+    const descMatch = cardHtml.match(/class="tarjeta-desc"[^>]*>([\s\S]*?)<\/p>/i);
     const descripcion = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : '';
 
-    const conMatch = cardHtml.match(/class="tarjeta-nombre"[^>]*>([sS]*?)</p>/i);
+    const conMatch = cardHtml.match(/class="tarjeta-nombre"[^>]*>([\s\S]*?)<\/p>/i);
     const contacto = conMatch ? conMatch[1].replace(/<[^>]+>/g, '').replace('Contacto:','').trim() : '';
 
-    const fecMatch = cardHtml.match(/class="tarjeta-fecha"[^>]*>([sS]*?)</p>/i);
+    const fecMatch = cardHtml.match(/class="tarjeta-fecha"[^>]*>([\s\S]*?)<\/p>/i);
     let fechaRaw = fecMatch ? fecMatch[1].replace(/<[^>]+>/g, '').trim() : '';
     fechaRaw = fechaRaw.split('\n')[0].trim();
 
@@ -76,6 +75,19 @@ function parseHTMLTarjeta(htmlStr, tipoDefault) {
   return lista;
 }
 
+function extraerNumeroContador(htmlStr, keyword) {
+  const idx = htmlStr.toLowerCase().indexOf(keyword);
+  if (idx === -1) return 0;
+  const sub = htmlStr.slice(idx, idx + 300);
+  const bStart = sub.indexOf('<b>');
+  const bEnd = sub.indexOf('</b>');
+  if (bStart !== -1 && bEnd !== -1 && bEnd > bStart) {
+    const val = parseInt(sub.slice(bStart + 3, bEnd).trim());
+    if (!isNaN(val)) return val;
+  }
+  return 0;
+}
+
 export async function onRequest(context) {
   try {
     const BASE = 'https://incendio.sepv.es/';
@@ -93,12 +105,8 @@ export async function onRequest(context) {
 
     const anuncios = [...listaNec, ...listaOff].sort((a, b) => a.fechaSeg - b.fechaSeg);
 
-    let totalNecesita = 71, totalOfrece = 2515;
-    const necNumMatch = htmlNec.match(/solicitud|peticion[\s\S]*?<b>(\d+)</b>/i);
-    if (necNumMatch) totalNecesita = parseInt(necNumMatch[1]);
-
-    const offNumMatch = htmlOff.match(/oferta|ayuda[\s\S]*?<b>(\d+)</b>/i);
-    if (offNumMatch) totalOfrece = parseInt(offNumMatch[1]);
+    let totalNecesita = extraerNumeroContador(htmlNec, 'peticion') || 71;
+    let totalOfrece = extraerNumeroContador(htmlOff, 'oferta') || 2515;
 
     let resueltos = RESUELTOS_DEFAULT;
     if (context.env && context.env.RESUELTOS_KV) {
