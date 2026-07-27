@@ -77,5 +77,35 @@
     "id": "resuelto-14",
     "contacto": "camila",
     "localidad": "cadalso"
+  },
+  {
+    "id": "necesito-1-407078",
+    "contacto": "Jon",
+    "localidad": "Valdemaqueda",
+    "desc": "Hay que mover 500 cabras de Valdemaqueda"
+  },
+  {
+    "id": "necesito-0-anon",
+    "contacto": "",
+    "localidad": "",
+    "desc": ""
+  },
+  {
+    "id": "necesito-2-915141",
+    "contacto": "ricardo alvarez herranz",
+    "localidad": "Aldea Del Fresno",
+    "desc": "Alojamientos para mis 2 perros mientras "
+  },
+  {
+    "id": "necesito-0-123456",
+    "contacto": "Alex",
+    "localidad": "Robledo",
+    "desc": "Prueba"
+  },
+  {
+    "id": "ofrezco-0-463303",
+    "contacto": "Beatriz Juanes",
+    "localidad": "Sierra Oeste",
+    "desc": "Ofrezco transporte de animales pequeños "
   }
 ]

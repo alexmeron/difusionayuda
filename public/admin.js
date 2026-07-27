@@ -20,7 +20,8 @@ function esResueltoAdmin(anuncio) {
   const c = norm(anuncio.contacto)
 
   return listaResueltosAdmin.some(r => {
-    if (r.id && r.id === anuncio.id) return true
+    if (r.id && r.id === anuncio.id) return true;
+    if (!r.contacto && !r.localidad && !r.desc) return false;
     if (r.contacto  && !c.includes(norm(r.contacto)))  return false
     if (r.localidad && !l.includes(norm(r.localidad))) return false
     if (r.desc      && !d.includes(norm(r.desc)))      return false

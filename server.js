@@ -6,6 +6,22 @@ const cheerio = require('cheerio')
 const app  = express()
 const PORT = 3030
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'R8J5WXL5 25%'
+
+function isPassValid(p) {
+  if (!p) {
+    console.error('[AUTH] Failed: password is empty');
+    return false;
+  }
+  let dec = p;
+  try { dec = decodeURIComponent(p); } catch(e){}
+  
+  const valid = p === ADMIN_PASSWORD || dec === ADMIN_PASSWORD || p === 'R8J5WXL5 25%' || p === 'R8J5WXL5%2025%';
+  if (!valid) {
+    console.error('[AUTH] Failed: invalid password provided ->', p);
+  }
+  return valid;
+}
+
 const RESUELTOS_FILE = path.join(__dirname, 'resueltos.json')
 const REPORTES_FILE  = path.join(__dirname, 'reportes.json')
 
@@ -162,33 +178,13 @@ app.get('/api/resueltos', (_, res) => {
   res.json(cargarResueltos())
 })
 
-// ── API REPORTES DE USUARIOS (PÚBLICO) ───────────────────────────────────────
-app.post('/api/reportar-resuelto', (req, res) => {
-  const { id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp } = req.body
-  if (!id) return res.status(400).json({ ok: false, error: 'Falta ID' })
-
-  let reportes = cargarReportes()
-  const existe = reportes.find(r => r.id === id)
-
-  if (!existe) {
-    reportes.push({
-      id,
-      contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp,
-      fechaReporte: new Date().toISOString()
-    })
-    guardarReportes(reportes)
-  }
-
-  res.json({ ok: true, msg: 'Reporte registrado para verificación del admin' })
-})
-
 // ── API ADMIN ─────────────────────────────────────────────────────────────────
 app.post('/api/admin/login', (req, res) => {
   let { password } = req.body
   let passDecoded = password
   try { passDecoded = decodeURIComponent(password) } catch(e){}
 
-  if (password === ADMIN_PASSWORD || passDecoded === ADMIN_PASSWORD || password === 'R8J5WXL5%2025%') {
+  if (isPassValid(password)) {
     return res.json({ ok: true, token: 'admin-authenticated-token' })
   }
   res.status(401).json({ ok: false, error: 'Contraseña incorrecta' })
@@ -199,12 +195,6 @@ app.get('/api/admin/reportes', (req, res) => {
   let passDecoded = password
   try { passDecoded = decodeURIComponent(password) } catch(e){}
 
-  const isPassValid = (p) => {
-    if (!p) return false;
-    let dec = p;
-    try { dec = decodeURIComponent(p); } catch(e){}
-    return p === ADMIN_PASSWORD || dec === ADMIN_PASSWORD || p === 'R8J5WXL5 25%' || p === 'R8J5WXL5%2025%';
-  };
   if (!isPassValid(password)) {
     return res.status(401).json({ ok: false, error: 'No autorizado' })
   }
@@ -212,17 +202,35 @@ app.get('/api/admin/reportes', (req, res) => {
   res.json(cargarReportes())
 })
 
+
+app.post('/api/reportar-resuelto', (req, res) => {
+  const data = req.body;
+  if (!data || !data.id) return res.status(400).json({ ok: false });
+  
+  let reportes = cargarReportes();
+  const existe = reportes.some(r => r.id === data.id);
+  if (!existe) {
+    reportes.push({ ...data, fechaReporte: new Date().toISOString() });
+    guardarReportes(reportes);
+  }
+  res.json({ ok: true });
+});
+
 app.post('/api/admin/toggle-resuelto', (req, res) => {
   const { password, id, contacto, localidad, desc } = req.body
   let passDecoded = password
   try { passDecoded = decodeURIComponent(password) } catch(e){}
 
-  if (password !== ADMIN_PASSWORD && passDecoded !== ADMIN_PASSWORD && password !== 'R8J5WXL5%2025%') {
+  if (!isPassValid(password)) {
     return res.status(401).json({ ok: false, error: 'No autorizado' })
   }
 
   let lista = cargarResueltos()
-  const existeIdx = lista.findIndex(item => item.id === id || (id && item.id === id))
+  const existeIdx = lista.findIndex(item => {
+    if (item.id === id) return true;
+    if (item.contacto === contacto && item.localidad === localidad && item.desc === desc) return true;
+    return false;
+  })
 
   if (existeIdx >= 0) {
     lista.splice(existeIdx, 1)
@@ -245,7 +253,7 @@ app.post('/api/admin/descartar-reporte', (req, res) => {
   let passDecoded = password
   try { passDecoded = decodeURIComponent(password) } catch(e){}
 
-  if (password !== ADMIN_PASSWORD && passDecoded !== ADMIN_PASSWORD && password !== 'R8J5WXL5%2025%') {
+  if (!isPassValid(password)) {
     return res.status(401).json({ ok: false, error: 'No autorizado' })
   }
 
@@ -266,6 +274,6 @@ app.get('*', (_, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`\n🔥 Incendio Monitor → http://localhost:${PORT}`)
+  console.log(`\n🔥 Incendio Monitor (FIX LOCAL APLICADO) → http://localhost:${PORT}`)
   console.log(`🔐 Panel Admin     → http://localhost:${PORT}/admin (Pass: ${ADMIN_PASSWORD})\n`)
 })

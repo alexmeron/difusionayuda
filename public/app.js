@@ -46,7 +46,8 @@ function esResuelto(anuncio) {
   const combo = [...RESUELTOS, ...listaResueltosDinamica]
 
   return combo.some(r => {
-    if (r.id && r.id === anuncio.id) return true
+    if (r.id && r.id === anuncio.id) return true;
+    if (!r.contacto && !r.localidad && !r.desc) return false;
     if (r.contacto  && !c.includes(norm(r.contacto)))  return false
     if (r.localidad && !l.includes(norm(r.localidad))) return false
     if (r.desc      && !d.includes(norm(r.desc)))      return false
@@ -935,13 +936,12 @@ function tarjetaHTML(a) {
       ${esNecesita && !resuelto ? `<button class="btn-match-card" onclick="abrirModalMatch('${a.id}')">🎯 Ver ayuda compatible (Match)</button>` : ''}
       <div class="card-foot">
         ${a.contacto ? `<span class="card-contacto">👤 ${escHtml(a.contacto)}</span>` : ''}
-        ${!resuelto ? `<button onclick="reportarResueltoUsuario('${escHtml(a.id)}', this)" class="btn-reportar" title="Notificar que este anuncio ya fue resuelto">🚩 Notificar resuelto</button>` : ''}
         <div class="card-btns">
-          <button onclick="abrirModalMatch('${escHtml(a.id)}')" class="btn-accion btn-matching" title="Buscar compatibilidades">${a.tipo === 'necesito' ? '🎯 Buscar ayuda' : '🎯 Buscar peticiones'}</button>
           ${a.telefono ? `<a href="tel:${escHtml(a.telefono)}" class="btn-accion btn-llamar" id="llamar-${escHtml(a.id)}">📞 Llamar</a>` : ''}
           ${a.whatsapp ? `<a href="${escHtml(a.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap" id="wasap-${escHtml(a.id)}">💬 WhatsApp</a>` : ''}
-        </div>
-      </div>
+          </div>
+            </div>
+      ${esNecesita && !resuelto ? `<button class="btn-solucionado-card" style="background:rgba(42,157,143,.1); color:#60e0d5; border: 1.5px solid rgba(42,157,143,.3); padding:.5rem; margin-top:.8rem; width:100%; border-radius:8px; font-size:.8rem; font-weight:700; cursor:pointer; transition: all 0.2s; display:block;" onmouseover="this.style.background='rgba(42,157,143,.2)'; this.style.borderColor='rgba(42,157,143,.5)'" onmouseout="this.style.background='rgba(42,157,143,.1)'; this.style.borderColor='rgba(42,157,143,.3)'" onclick="reportarResuelto('${a.id}')">✅ Marcar como solucionado</button>` : ''}
     </article>`
 }
 
