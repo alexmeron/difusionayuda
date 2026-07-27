@@ -118,7 +118,7 @@ function renderAdminReportes() {
         <div style="display:flex; gap:.4rem; flex-wrap:wrap; align-items:center;">
           ${r.telefono ? `<a href="tel:${r.telefono}" class="btn-accion btn-llamar" style="font-size:.75rem;">📞 Llamar p/ verificar</a>` : ''}
           ${r.whatsapp ? `<a href="${r.whatsapp}" target="_blank" rel="noopener" class="btn-accion btn-wasap" style="font-size:.75rem;">💬 WhatsApp</a>` : ''}
-          <button onclick='aprobarReporteAdmin(${JSON.stringify(r).replace(/'/g, "&apos;")})' class="btn-toggle-admin btn-toggle-oculto" style="font-size:.75rem; padding:.4rem .8rem;">✅ Aprobar y Ocultar</button>
+          <button onclick="aprobarReporteAdmin('${r.id}')" class="btn-toggle-admin btn-toggle-oculto" style="font-size:.75rem; padding:.4rem .8rem;">✅ Aprobar y Ocultar</button>
           <button onclick='descartarReporteAdmin("${r.id}")' class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem;">❌ Descartar</button>
         </div>
       </div>
@@ -126,10 +126,17 @@ function renderAdminReportes() {
   }).join('')
 }
 
-async function aprobarReporteAdmin(r) {
-  await toggleResueltoAnuncio(r)
-  descartarReporteAdmin(r.id)
+
+async function aprobarReporteAdmin(id) {
+  const r = listaReportesAdmin.find(item => item.id === id)
+  if (r) {
+    await toggleResueltoAnuncio(r)
+  } else {
+    await toggleResueltoAnuncio(id)
+  }
+  descartarReporteAdmin(id)
 }
+
 
 async function descartarReporteAdmin(id) {
   try {
@@ -148,7 +155,11 @@ async function descartarReporteAdmin(id) {
   }
 }
 
-async function toggleResueltoAnuncio(anuncio) {
+
+async function toggleResueltoAnuncio(anuncioOrId) {
+  let id = typeof anuncioOrId === 'string' ? anuncioOrId : anuncioOrId.id
+  let anuncio = todosAnunciosAdmin.find(a => a.id === id) || (typeof anuncioOrId === 'object' ? anuncioOrId : { id })
+
   try {
     const res = await fetch('/api/admin/toggle-resuelto', {
       method: 'POST',
@@ -156,13 +167,21 @@ async function toggleResueltoAnuncio(anuncio) {
       body: JSON.stringify({
         password: adminPass,
         id: anuncio.id,
-        contacto: anuncio.contacto,
-        localidad: anuncio.localidad,
+        contacto: anuncio.contacto || '',
+        localidad: anuncio.localidad || anuncio.provincia || '',
         desc: anuncio.descripcion ? anuncio.descripcion.slice(0, 40) : ''
       })
     })
-    const data = await res.json()
-    if (!res.ok || !data.ok) throw new Error(data.error || 'Error al guardar')
+
+    const text = await res.text()
+    let data = {}
+    try {
+      data = JSON.parse(text)
+    } catch(err) {
+      throw new Error('Respuesta no válida del servidor: ' + text)
+    }
+
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Error al guardar cambios')
 
     listaResueltosAdmin = data.lista || []
     renderAdminList()
@@ -170,6 +189,7 @@ async function toggleResueltoAnuncio(anuncio) {
     alert('Error: ' + e.message)
   }
 }
+
 
 function renderAdminList() {
   const busqueda = norm(document.getElementById('admin-busqueda').value)
@@ -230,7 +250,7 @@ function renderAdminList() {
         </div>
 
         <div style="flex-shrink:0;">
-          <button onclick='toggleResueltoAnuncio(${JSON.stringify(a).replace(/'/g, "&apos;")})'
+          <button onclick="toggleResueltoAnuncio('${a.id}')"
             class="btn-toggle-admin ${esRes ? 'btn-toggle-oculto' : 'btn-toggle-activo'}">
             ${esRes ? '👁️ Reactivar Anuncio' : '🙈 Ocultar (Marcar Resuelto)'}
           </button>

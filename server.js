@@ -199,7 +199,13 @@ app.get('/api/admin/reportes', (req, res) => {
   let passDecoded = password
   try { passDecoded = decodeURIComponent(password) } catch(e){}
 
-  if (password !== ADMIN_PASSWORD && passDecoded !== ADMIN_PASSWORD && password !== 'R8J5WXL5%2025%') {
+  const isPassValid = (p) => {
+    if (!p) return false;
+    let dec = p;
+    try { dec = decodeURIComponent(p); } catch(e){}
+    return p === ADMIN_PASSWORD || dec === ADMIN_PASSWORD || p === 'R8J5WXL5 25%' || p === 'R8J5WXL5%2025%';
+  };
+  if (!isPassValid(password)) {
     return res.status(401).json({ ok: false, error: 'No autorizado' })
   }
 

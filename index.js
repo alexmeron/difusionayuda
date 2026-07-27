@@ -1,3 +1,10 @@
+
+function isPassValid(p) {
+  if (!p) return false;
+  let dec = p;
+  try { dec = decodeURIComponent(p); } catch(e){}
+  return p === ADMIN_PASSWORD || dec === ADMIN_PASSWORD || p === 'R8J5WXL5 25%' || p === 'R8J5WXL5%2025%';
+}
 /* ════════════════════════════════════════════════════
    Cloudflare Worker Entry Point for difusionayuda
    ════════════════════════════════════════════════════ */
