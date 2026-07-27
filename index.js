@@ -218,7 +218,7 @@ export default {
           anuncios,
           totalNecesita,
           totalOfrece,
-          resueltos: RESUELTOS_DEFAULT,
+          resueltos: globalThis.inMemoryResueltos || RESUELTOS_DEFAULT,
           ultimaActualizacion: new Date().toISOString()
         }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
       } catch (err) {
@@ -226,8 +226,72 @@ export default {
       }
     }
 
+    
+    // Add memory storage for Cloudflare Worker
+    if (!globalThis.inMemoryReportes) globalThis.inMemoryReportes = [];
+    if (!globalThis.inMemoryResueltos) globalThis.inMemoryResueltos = [...RESUELTOS_DEFAULT];
+
+    if (url.pathname === '/api/reportar-resuelto' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const { id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp } = body;
+        if (!id) return new Response(JSON.stringify({ ok: false, error: 'Falta ID' }), { status: 400 });
+        
+        const existe = globalThis.inMemoryReportes.find(r => r.id === id);
+        if (!existe) {
+          globalThis.inMemoryReportes.push({
+            id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp,
+            fechaReporte: new Date().toISOString()
+          });
+        }
+        return new Response(JSON.stringify({ ok: true, msg: 'Reporte registrado para verificación del admin' }), { headers: { 'Content-Type': 'application/json' } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+
+    if (url.pathname === '/api/admin/reportes' && request.method === 'GET') {
+      const p = url.searchParams.get('password');
+      if (!isPassValid(p)) return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
+      return new Response(JSON.stringify(globalThis.inMemoryReportes), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (url.pathname === '/api/admin/descartar-reporte' && request.method === 'POST') {
+      try {
+        const { password, id } = await request.json();
+        if (!isPassValid(password)) return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
+        
+        globalThis.inMemoryReportes = globalThis.inMemoryReportes.filter(r => r.id !== id);
+        return new Response(JSON.stringify({ ok: true, reportes: globalThis.inMemoryReportes }), { headers: { 'Content-Type': 'application/json' } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+
+    if (url.pathname === '/api/admin/toggle-resuelto' && request.method === 'POST') {
+      try {
+        const { password, id, contacto, localidad, desc } = await request.json();
+        if (!isPassValid(password)) return new Response(JSON.stringify({ ok: false, error: 'No autorizado' }), { status: 401 });
+        
+        const existeIdx = globalThis.inMemoryResueltos.findIndex(item => item.id === id);
+        let resuelto = false;
+        
+        if (existeIdx >= 0) {
+          globalThis.inMemoryResueltos.splice(existeIdx, 1);
+        } else {
+          globalThis.inMemoryResueltos.push({ id, contacto, localidad, desc });
+          globalThis.inMemoryReportes = globalThis.inMemoryReportes.filter(r => r.id !== id);
+          resuelto = true;
+        }
+        
+        return new Response(JSON.stringify({ ok: true, resuelto, lista: globalThis.inMemoryResueltos }), { headers: { 'Content-Type': 'application/json' } });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: err.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
+    }
+
     if (url.pathname === '/api/resueltos') {
-      return new Response(JSON.stringify(RESUELTOS_DEFAULT), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(globalThis.inMemoryResueltos || RESUELTOS_DEFAULT), { headers: { 'Content-Type': 'application/json' } });
     }
 
     if (url.pathname === '/api/admin/login' && request.method === 'POST') {
