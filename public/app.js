@@ -314,6 +314,19 @@ function calcularMatchScore(necesidad, oferta) {
   return { score: Math.min(99, Math.max(10, score)), razones, distanciaKm }
 }
 
+
+function buscarTopMatchesParaOferta(oferta, peticiones, limite = 8) {
+  const matches = []
+  for (const nec of peticiones) {
+    const { score, razones, distanciaKm } = calcularMatchScore(nec, oferta)
+    if (score > 15) {
+      matches.push({ necesidad: nec, score, razones, distanciaKm })
+    }
+  }
+  matches.sort((a, b) => b.score - a.score)
+  return matches.slice(0, limite)
+}
+
 function buscarTopMatchesParaNecesidad(necesidad, ofertas, max = 6) {
   return ofertas
     .map(off => ({ oferta: off, ...calcularMatchScore(necesidad, off) }))
@@ -690,65 +703,119 @@ function inicializarMapaMatching() {
 
 // ── MODAL MATCHING PARA UNA PETICIÓN INDIVIDUAL ──────────────────────────────
 function abrirModalMatch(idAnuncio) {
-  const nec = todosLosAnuncios.find(a => a.id === idAnuncio)
-  if (!nec) return
+  const anuncioSelected = todosLosAnuncios.find(a => a.id === idAnuncio)
+  if (!anuncioSelected) return
 
   const noResueltos = todosLosAnuncios.filter(a => !esResuelto(a))
-  const ofertas = noResueltos.filter(a => a.tipo === 'ofrezco')
-  const topMatches = buscarTopMatchesParaNecesidad(nec, ofertas, 8)
+  const isNecesidad = anuncioSelected.tipo === 'necesito'
 
-  const lugarNec = [nec.provincia, nec.localidad].filter(Boolean).join(' · ')
-
-  document.getElementById('modal-title').textContent = `🎯 Ayuda compatible mas cercana para: ${nec.categoria}`
-  document.getElementById('modal-sub').textContent = `📍 ${lugarNec || 'Ubicación no especificada'} · Contacto: ${nec.contacto || 'Anónimo'}`
-
+  const lugarBase = [anuncioSelected.provincia, anuncioSelected.localidad].filter(Boolean).join(' · ')
   const bodyEl = document.getElementById('modal-body')
-  bodyEl.innerHTML = `
-    <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); padding:1rem; border-radius:12px; display:flex; flex-direction:column; gap:.6rem;">
-      <p style="font-size:.85rem; color:var(--blanco); margin:0; line-height:1.5;">${escHtml(nec.descripcion)}</p>
-      <div style="display:flex; justify-content:space-between; align-items:center; pt:.4rem; border-top:1px solid rgba(255,255,255,.08); flex-wrap:wrap; gap:.4rem;">
-        <span style="font-size:.78rem; color:var(--gtxt);">👤 Contacto: ${escHtml(nec.contacto || 'Anónimo')}</span>
-        <div style="display:flex; gap:.4rem;">
-          ${nec.telefono ? `<a href="tel:${escHtml(nec.telefono)}" class="btn-accion btn-llamar">📞 Llamar a quien necesita</a>` : ''}
-          ${nec.whatsapp ? `<a href="${escHtml(nec.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap">💬 WhatsApp</a>` : ''}
+
+  if (isNecesidad) {
+    const nec = anuncioSelected
+    const ofertas = noResueltos.filter(a => a.tipo === 'ofrezco')
+    const topMatches = buscarTopMatchesParaNecesidad(nec, ofertas, 8)
+
+    document.getElementById('modal-title').textContent = `🎯 Ayuda compatible mas cercana para: ${nec.categoria}`
+    document.getElementById('modal-sub').textContent = `📍 ${lugarBase || 'Ubicación no especificada'} · Contacto: ${nec.contacto || 'Anónimo'}`
+
+    bodyEl.innerHTML = `
+      <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); padding:1rem; border-radius:12px; display:flex; flex-direction:column; gap:.6rem;">
+        <p style="font-size:.85rem; color:var(--blanco); margin:0; line-height:1.5;">${escHtml(nec.descripcion)}</p>
+        <div style="display:flex; justify-content:space-between; align-items:center; pt:.4rem; border-top:1px solid rgba(255,255,255,.08); flex-wrap:wrap; gap:.4rem;">
+          <span style="font-size:.78rem; color:var(--gtxt);">👤 Contacto: ${escHtml(nec.contacto || 'Anónimo')}</span>
+          <div style="display:flex; gap:.4rem;">
+            ${nec.telefono ? `<a href="tel:${escHtml(nec.telefono)}" class="btn-accion btn-llamar">📞 Llamar a quien necesita</a>` : ''}
+            ${nec.whatsapp ? `<a href="${escHtml(nec.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap">💬 WhatsApp</a>` : ''}
+          </div>
         </div>
       </div>
-    </div>
 
-    <h4 style="font-size:.95rem; color:var(--naranja); margin:0; display:flex; align-items:center; gap:.4rem;">
-      Ayuda compatible mas cercana (${topMatches.length} que ofrecen ayuda):
-    </h4>
+      <h4 style="font-size:.95rem; color:var(--naranja); margin:0; display:flex; align-items:center; gap:.4rem;">
+        Ayuda compatible mas cercana (${topMatches.length} que ofrecen ayuda):
+      </h4>
 
-    <div style="display:flex; flex-direction:column; gap:.8rem;">
-      ${topMatches.map((m, idx) => {
-        const off = m.oferta
-        const lugarOff = [off.provincia, off.localidad].filter(Boolean).join(' · ')
-        const distTxt = m.distanciaKm != null ? ` · 📏 ~${m.distanciaKm} km de distancia` : ''
-        return `
-          <div style="background:var(--g1); border:1.5px solid var(--g3); border-radius:12px; padding:1rem; display:flex; flex-direction:column; gap:.5rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.4rem;">
-              <span class="match-score-badge">#${idx+1} · ⚡ ${m.score}% MATCH${distTxt}</span>
-              <span style="font-size:.74rem; color:var(--gtxt);">${escHtml(off.fecha)}</span>
-            </div>
-            <div class="match-reasons">${m.razones.join(' · ')}</div>
-            <h5 style="font-size:1rem; font-weight:700; margin:0; color:var(--blanco);">${escHtml(off.categoriaEmoji)} ${escHtml(off.categoria)}</h5>
-            ${lugarOff ? `<p style="font-size:.8rem; color:var(--naranja); margin:0;">📍 ${escHtml(lugarOff)}</p>` : ''}
-            <p style="font-size:.84rem; color:#c5bdb0; margin:0; line-height:1.5;">${escHtml(off.descripcion)}</p>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:.4rem; pt:.4rem; border-top:1px solid var(--g3);">
-              <span style="font-size:.78rem; color:var(--gtxt);">👤 Contacto: ${escHtml(off.contacto)}</span>
-              <div style="display:flex; gap:.4rem;">
-                ${off.telefono ? `<a href="tel:${escHtml(off.telefono)}" class="btn-accion btn-llamar">📞 Llamar</a>` : ''}
-                ${off.whatsapp ? `<a href="${escHtml(off.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap">💬 WhatsApp</a>` : ''}
+      <div style="display:flex; flex-direction:column; gap:.8rem;">
+        ${topMatches.map((m, idx) => {
+          const off = m.oferta
+          const lugarOff = [off.provincia, off.localidad].filter(Boolean).join(' · ')
+          const distTxt = m.distanciaKm != null ? ` · 📏 ~${m.distanciaKm} km de distancia` : ''
+          return `
+            <div style="background:var(--g1); border:1.5px solid var(--g3); border-radius:12px; padding:1rem; display:flex; flex-direction:column; gap:.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.4rem;">
+                <span class="match-score-badge">#${idx+1} · ⚡ ${m.score}% MATCH${distTxt}</span>
+                <span style="font-size:.74rem; color:var(--gtxt);">${escHtml(off.fecha)}</span>
+              </div>
+              <div style="font-size:.78rem; color:var(--verde); font-weight:600;">${m.razones.join(' · ')}</div>
+              <h5 style="font-size:.95rem; margin:0; color:var(--blanco);">${off.catEmoji || ''} ${off.categoria} ${lugarOff ? `· <span style="color:var(--naranja); font-size:.82rem;">📍 ${lugarOff}</span>` : ''}</h5>
+              <p style="font-size:.83rem; color:#c5bdb0; margin:0; line-height:1.4;">${escHtml(off.descripcion)}</p>
+              <div style="display:flex; justify-content:space-between; align-items:center; pt:.4rem; border-top:1px solid rgba(255,255,255,.06); flex-wrap:wrap; gap:.4rem;">
+                <span style="font-size:.78rem; color:var(--gtxt);">👤 Contacto: ${escHtml(off.contacto || 'Particular')}</span>
+                <div style="display:flex; gap:.3rem;">
+                  ${off.telefono ? `<a href="tel:${escHtml(off.telefono)}" class="btn-accion btn-llamar">📞 Llamar</a>` : ''}
+                  ${off.whatsapp ? `<a href="${escHtml(off.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap">💬 WhatsApp</a>` : ''}
+                </div>
               </div>
             </div>
-          </div>
-        `
-      }).join('')}
-    </div>
-  `
+          `
+        }).join('')}
+      </div>
+    `
+  } else {
+    // Es una oferta (ofrezco) -> Buscar peticiones que necesitan ayuda
+    const off = anuncioSelected
+    const peticiones = noResueltos.filter(a => a.tipo === 'necesito')
+    const topMatches = buscarTopMatchesParaOferta(off, peticiones, 8)
 
-  const modal = document.getElementById('modal-match')
-  if (modal) modal.classList.add('activo')
+    document.getElementById('modal-title').textContent = `🎯 Peticiones de ayuda compatibles para tu oferta: ${off.categoria}`
+    document.getElementById('modal-sub').textContent = `📍 ${lugarBase || 'Ubicación no especificada'} · Contacto: ${off.contacto || 'Anónimo'}`
+
+    bodyEl.innerHTML = `
+      <div style="background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); padding:1rem; border-radius:12px; display:flex; flex-direction:column; gap:.6rem;">
+        <p style="font-size:.85rem; color:var(--blanco); margin:0; line-height:1.5;">${escHtml(off.descripcion)}</p>
+        <div style="display:flex; justify-content:space-between; align-items:center; pt:.4rem; border-top:1px solid rgba(255,255,255,.08); flex-wrap:wrap; gap:.4rem;">
+          <span style="font-size:.78rem; color:var(--gtxt);">👤 Contacto: ${escHtml(off.contacto || 'Particular')}</span>
+          <div style="display:flex; gap:.4rem;">
+            ${off.telefono ? `<a href="tel:${escHtml(off.telefono)}" class="btn-accion btn-llamar">📞 Llamar a quien ofrece</a>` : ''}
+            ${off.whatsapp ? `<a href="${escHtml(off.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap">💬 WhatsApp</a>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <h4 style="font-size:.95rem; color:var(--rojo); margin:0; display:flex; align-items:center; gap:.4rem;">
+        🆘 Peticiones que necesitan esta ayuda (${topMatches.length} peticiones compatibles):
+      </h4>
+
+      <div style="display:flex; flex-direction:column; gap:.8rem;">
+        ${topMatches.map((m, idx) => {
+          const nec = m.necesidad
+          const lugarNec = [nec.provincia, nec.localidad].filter(Boolean).join(' · ')
+          const distTxt = m.distanciaKm != null ? ` · 📏 ~${m.distanciaKm} km de distancia` : ''
+          return `
+            <div style="background:var(--g1); border:1.5px solid var(--g3); border-radius:12px; padding:1rem; display:flex; flex-direction:column; gap:.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.4rem;">
+                <span class="match-score-badge" style="background:rgba(230,57,70,.15); color:#ff9090; border-color:rgba(230,57,70,.3);">#${idx+1} · ⚡ ${m.score}% MATCH${distTxt}</span>
+                <span style="font-size:.74rem; color:var(--gtxt);">${escHtml(nec.fecha)}</span>
+              </div>
+              <div style="font-size:.78rem; color:var(--verde); font-weight:600;">${m.razones.join(' · ')}</div>
+              <h5 style="font-size:.95rem; margin:0; color:var(--blanco);">${nec.catEmoji || ''} ${nec.categoria} ${lugarNec ? `· <span style="color:var(--naranja); font-size:.82rem;">📍 ${lugarNec}</span>` : ''}</h5>
+              <p style="font-size:.83rem; color:#c5bdb0; margin:0; line-height:1.4;">${escHtml(nec.descripcion)}</p>
+              <div style="display:flex; justify-content:space-between; align-items:center; pt:.4rem; border-top:1px solid rgba(255,255,255,.06); flex-wrap:wrap; gap:.4rem;">
+                <span style="font-size:.78rem; color:var(--gtxt);">👤 Contacto: ${escHtml(nec.contacto || 'Anónimo')}</span>
+                <div style="display:flex; gap:.3rem;">
+                  ${nec.telefono ? `<a href="tel:${escHtml(nec.telefono)}" class="btn-accion btn-llamar">📞 Llamar</a>` : ''}
+                  ${nec.whatsapp ? `<a href="${escHtml(nec.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap">💬 WhatsApp</a>` : ''}
+                </div>
+              </div>
+            </div>
+          `
+        }).join('')}
+      </div>
+    `
+  }
+
+  document.getElementById('modal-match').classList.add('activo')
 }
 
 function cerrarModalMatch() {
@@ -817,13 +884,13 @@ function cambiarPagina(p) {
 
 
 
-function reportarResueltoUsuario(idAnuncio) {
+
+function reportarResueltoUsuario(idAnuncio, btnEl) {
   const a = todosLosAnuncios.find(item => item.id === idAnuncio)
   if (!a) return
 
-  if (!confirm(`¿Deseas notificar que el anuncio de "${a.contacto || 'este caso'}" en ${a.localidad || a.provincia} ya se ha resuelto?\n\nEl administrador recibirá la notificación para verificarlo.`)) {
-    return
-  }
+  const confirmacion = confirm(`¿Deseas notificar que este caso (${a.contacto || 'Particular'} - ${a.localidad || a.provincia}) ya ha sido resuelto?\n\nEl administrador recibirá la notificación en su panel de control para verificarlo.`)
+  if (!confirmacion) return
 
   fetch('/api/reportar-resuelto', {
     method: 'POST',
@@ -833,11 +900,23 @@ function reportarResueltoUsuario(idAnuncio) {
   .then(res => res.json())
   .then(data => {
     if (data.ok) {
-      mostrarToast('🚩 Notificación enviada al panel de control para verificación')
+      if (btnEl) {
+        btnEl.textContent = '⌛ Notificado p/ revisión'
+        btnEl.disabled = true
+        btnEl.style.opacity = '0.6'
+        btnEl.style.cursor = 'default'
+      }
+      mostrarToast('🚩 Notificación enviada al panel de administración')
+    } else {
+      alert('Error: ' + (data.error || 'No se pudo registrar el reporte'))
     }
   })
-  .catch(err => console.error('Error al reportar:', err))
+  .catch(err => {
+    console.error('Error al reportar:', err)
+    alert('Error al enviar la notificación')
+  })
 }
+
 
 function tarjetaHTML(a) {
   const esNecesita = a.tipo === 'necesito'
@@ -856,8 +935,9 @@ function tarjetaHTML(a) {
       ${esNecesita && !resuelto ? `<button class="btn-match-card" onclick="abrirModalMatch('${a.id}')">🎯 Ver ayuda compatible (Match)</button>` : ''}
       <div class="card-foot">
         ${a.contacto ? `<span class="card-contacto">👤 ${escHtml(a.contacto)}</span>` : ''}
-        ${!resuelto ? `<button onclick="reportarResueltoUsuario('${escHtml(a.id)}')" class="btn-reportar" title="Notificar que este anuncio ya fue resuelto">🚩 Notificar resuelto</button>` : ''}
+        ${!resuelto ? `<button onclick="reportarResueltoUsuario('${escHtml(a.id)}', this)" class="btn-reportar" title="Notificar que este anuncio ya fue resuelto">🚩 Notificar resuelto</button>` : ''}
         <div class="card-btns">
+          <button onclick="abrirModalMatch('${escHtml(a.id)}')" class="btn-accion btn-matching" title="Buscar compatibilidades">${a.tipo === 'necesito' ? '🎯 Buscar ayuda' : '🎯 Buscar peticiones'}</button>
           ${a.telefono ? `<a href="tel:${escHtml(a.telefono)}" class="btn-accion btn-llamar" id="llamar-${escHtml(a.id)}">📞 Llamar</a>` : ''}
           ${a.whatsapp ? `<a href="${escHtml(a.whatsapp)}" target="_blank" rel="noopener" class="btn-accion btn-wasap" id="wasap-${escHtml(a.id)}">💬 WhatsApp</a>` : ''}
         </div>

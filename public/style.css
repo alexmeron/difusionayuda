@@ -825,3 +825,14 @@ body {
   padding: 1.2rem 1.5rem;
   margin-bottom: 2rem;
 }
+
+/* ── BOTÓN BUSCAR EMPAREJAMIENTOS DESDE TARJETA ── */
+.btn-matching {
+  background: rgba(42,157,143,.15);
+  color: #60e0d5;
+  border: 1px solid rgba(42,157,143,.3);
+}
+.btn-matching:hover {
+  background: rgba(42,157,143,.3);
+  border-color: #60e0d5;
+}
