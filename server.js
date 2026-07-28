@@ -1,6 +1,8 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient('https://qjtvpifbrvdyhzgpobyl.supabase.co', 'sb_publishable_C2bn9yZQwa0KFhCl-faRfg_ZuguwVr7');
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const supabaseAdmin = SUPABASE_SERVICE_KEY ? createClient('https://qjtvpifbrvdyhzgpobyl.supabase.co', SUPABASE_SERVICE_KEY) : null;
 
 // Auth Middleware Helper
 async function checkAdminAuth(req) {
@@ -41,6 +43,16 @@ const REPORTES_FILE  = path.join(__dirname, 'reportes.json')
 app.use(express.json())
 
 // ── Manejo de Resueltos Persistentes ──────────────────────────────────────────
+
+async function getAsignaciones() {
+  if (supabase) {
+    const client = supabaseAdmin || supabase;
+    const { data } = await client.from('asignaciones').select('*');
+    return data || [];
+  }
+  return [];
+}
+
 async function getResueltos() {
   try {
     const { data, error } = await supabase.from('resueltos').select('*');
@@ -159,12 +171,12 @@ app.get('/api/anuncios', async (req, res) => {
     const now = Date.now()
 
     if (refresh !== '1' && cache && now - cache.ts < CACHE_TTL) {
-      return res.json({ ...cache.data, resueltos: await getResueltos(), fromCache: true })
+      return res.json({ ...cache.data, resueltos: await getResueltos(), asignaciones: await getAsignaciones(), fromCache: true })
     }
 
     const data = await scrapeAll()
     cache = { data, ts: now }
-    res.json({ ...data, resueltos: await getResueltos(), fromCache: false })
+    res.json({ ...data, resueltos: await getResueltos(), asignaciones: await getAsignaciones(), fromCache: false })
   } catch (err) {
     console.error('[API]', err.message)
     res.status(500).json({ error: err.message })
@@ -219,6 +231,36 @@ app.post('/api/admin/descartar-reporte', async (req, res) => {
 })
 
 // ── RUTAS Y ESTÁTICOS ─────────────────────────────────────────────────────────
+
+app.post('/api/admin/asignar', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '').trim();
+  if (!token) return res.status(401).json({ ok: false, error: 'No autorizado' });
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return res.status(401).json({ ok: false, error: 'No autorizado' });
+  
+  const { id } = req.body;
+  const nombreAdmin = user.user_metadata?.nombre || 'Administrador';
+  
+  if (supabaseAdmin) await supabaseAdmin.from('asignaciones').upsert({ id, asignado_a: nombreAdmin });
+  else await supabase.from('asignaciones').upsert({ id, asignado_a: nombreAdmin });
+  res.json({ ok: true, asignado_a: nombreAdmin });
+});
+
+app.post('/api/admin/invitar', async (req, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '').trim();
+  if (!token) return res.status(401).json({ ok: false, error: 'No autorizado' });
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user || user.user_metadata?.rol !== 'superadmin') return res.status(401).json({ ok: false, error: 'No autorizado' });
+  
+  const { email, nombre } = req.body;
+  const { data, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+    data: { nombre, rol: 'admin' }
+  });
+  
+  if (inviteError) return res.status(500).json({ ok: false, error: inviteError.message });
+  res.json({ ok: true });
+});
+
 app.use(express.static(path.join(__dirname, 'public')))
 
 app.get('/admin', (_, res) => {

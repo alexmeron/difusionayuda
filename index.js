@@ -325,7 +325,7 @@ export default {
         const { id } = await request.json();
         const nombreAdmin = user.user_metadata?.nombre || 'Administrador';
         
-        await supabase.from('reportes').update({ asignado_a: nombreAdmin }).eq('id', id);
+        await supabase.from('asignaciones').upsert({ id, asignado_a: nombreAdmin });
         return jsonResponse({ ok: true, asignado_a: nombreAdmin });
       } catch (err) {
         return jsonResponse({ ok: false, error: err.message }, 500);

@@ -92,6 +92,7 @@ async function cargarDatosAdmin() {
     }
     todosAnunciosAdmin = data.anuncios || []
     listaResueltosAdmin = data.resueltos || []
+    listaAsignacionesAdmin = data.asignaciones || []
 
     // Cargar reportes pendientes de verificación
     const resRep = await fetch('/api/admin/reportes', {
@@ -148,10 +149,6 @@ function renderAdminReportes() {
         <div style="display:flex; gap:.4rem; flex-wrap:wrap; align-items:center;">
           ${r.telefono ? `<a href="tel:${r.telefono}" class="btn-accion btn-llamar" style="font-size:.75rem;">📞 Llamar p/ verificar</a>` : ''}
           ${r.whatsapp ? `<a href="${r.whatsapp}" target="_blank" rel="noopener" class="btn-accion btn-wasap" style="font-size:.75rem;">💬 WhatsApp</a>` : ''}
-          ${r.asignado_a 
-            ? \`<button class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem; border-color:var(--g3); color:var(--gtxt); cursor:default;" disabled>👤 Asignado a: ${r.asignado_a}</button>\`
-            : \`<button onclick="asignarCaso('${r.id}')" class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem; border-color:var(--naranja); color:var(--naranja);">✋ Asignarme seguimiento</button>\`
-          }
           <button onclick="aprobarReporteAdmin('${r.id}')" class="btn-toggle-admin btn-toggle-oculto" style="font-size:.75rem; padding:.4rem .8rem;">✅ Aprobar y Ocultar</button>
           <button onclick='descartarReporteAdmin("${r.id}")' class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem;">❌ Descartar</button>
         </div>
@@ -283,7 +280,16 @@ function renderAdminList() {
           <div style="font-size:.78rem; color:var(--gtxt);">👤 Contacto: <strong>${a.contacto || 'Anónimo'}</strong> ${a.telefono ? `· 📞 ${a.telefono}` : ''}</div>
         </div>
 
-        <div style="flex-shrink:0;">
+        <div style="flex-shrink:0; display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+          ${a.whatsapp ? `<a href="${a.whatsapp}" target="_blank" rel="noopener" class="btn-accion btn-wasap" style="font-size:.75rem; text-decoration:none; padding:.4rem .7rem;">💬 WhatsApp</a>` : ''}
+          ${(() => {
+            if (a.tipo !== 'necesito') return '';
+            const asig = listaAsignacionesAdmin.find(as => as.id === a.id);
+            if (asig) {
+              return `<button class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem; border-color:var(--g3); color:var(--gtxt); cursor:default;" disabled>👤 Asignado a: ${asig.asignado_a}</button>`;
+            }
+            return `<button onclick="asignarCaso('${a.id}')" class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem; border-color:var(--naranja); color:var(--naranja);">✋ Asignarme seguimiento</button>`;
+          })()}
           <button onclick="toggleResueltoAnuncio('${a.id}')"
             class="btn-toggle-admin ${esRes ? 'btn-toggle-oculto' : 'btn-toggle-activo'}">
             ${esRes ? '👁️ Reactivar Anuncio' : '🙈 Ocultar (Marcar Resuelto)'}
@@ -324,9 +330,13 @@ async function asignarCaso(id) {
     });
     const data = await res.json();
     if (data.ok) {
-      const reporte = listaReportesAdmin.find(r => r.id === id);
-      if (reporte) reporte.asignado_a = data.asignado_a;
-      renderAdminReportes();
+      const exists = listaAsignacionesAdmin.find(as => as.id === id);
+      if (exists) {
+        exists.asignado_a = data.asignado_a;
+      } else {
+        listaAsignacionesAdmin.push({ id, asignado_a: data.asignado_a });
+      }
+      renderAdminList();
     } else {
       alert('Error al asignar: ' + (data.error || 'Desconocido'));
     }
