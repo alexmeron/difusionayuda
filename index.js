@@ -313,6 +313,46 @@ export default {
       return data && data.user ? true : false;
     }
 
+    
+    if (url.pathname === '/api/admin/asignar' && request.method === 'POST') {
+      try {
+        const token = request.headers.get('Authorization')?.replace('Bearer ', '').trim();
+        if (!token) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+        const supabase = getSupabase(env);
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error || !user) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+        
+        const { id } = await request.json();
+        const nombreAdmin = user.user_metadata?.nombre || 'Administrador';
+        
+        await supabase.from('reportes').update({ asignado_a: nombreAdmin }).eq('id', id);
+        return jsonResponse({ ok: true, asignado_a: nombreAdmin });
+      } catch (err) {
+        return jsonResponse({ ok: false, error: err.message }, 500);
+      }
+    }
+
+    if (url.pathname === '/api/admin/invitar' && request.method === 'POST') {
+      try {
+        const token = request.headers.get('Authorization')?.replace('Bearer ', '').trim();
+        if (!token) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+        const supabase = getSupabase(env);
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error || !user || user.user_metadata?.rol !== 'superadmin') return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+        
+        const { email, nombre } = await request.json();
+        const supabaseAdmin = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false }});
+        const { data, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+          data: { nombre, rol: 'admin' }
+        });
+        
+        if (inviteError) throw inviteError;
+        return jsonResponse({ ok: true });
+      } catch (err) {
+        return jsonResponse({ ok: false, error: err.message }, 500);
+      }
+    }
+
     if (url.pathname === '/api/admin/reportes' && request.method === 'GET') {
       if (!(await checkAdminAuth(request, env))) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
       return jsonResponse(await getReportes(env));

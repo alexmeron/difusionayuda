@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient('https://qjtvpifbrvdyhzgpobyl.supabase.co', 'sb_publishable_C2bn9yZQwa0KFhCl-faRfg_ZuguwVr7');
 

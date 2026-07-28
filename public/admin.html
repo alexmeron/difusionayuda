@@ -151,6 +151,24 @@
     </div>
   </div>
 
+  
+  <!-- ═══════════════════════  INVITACIONES (SOLO SUPERADMIN)  ═══════════════════════ -->
+  <div id="admin-invitar-wrap" style="max-width:1200px; margin:1.5rem auto; padding:0 1.5rem;" hidden>
+    <div style="background:var(--g1); border:1.5px solid var(--naranja); border-radius:14px; padding:1.5rem;">
+      <h3 style="font-size:1.1rem; color:var(--naranja); margin:0 0 .8rem; display:flex; align-items:center; gap:.5rem;">
+        👑 Invitar a un Administrador
+      </h3>
+      <p style="font-size:.85rem; color:var(--gtxt); margin-bottom:1rem;">Como superadministrador, puedes invitar a otras personas para que te ayuden a gestionar los reportes.</p>
+      
+      <form onsubmit="event.preventDefault(); invitarAdmin()" style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+        <input type="text" id="invitar-nombre" class="admin-input" style="margin:0; max-width:200px;" placeholder="Nombre (ej. Juan)" required>
+        <input type="email" id="invitar-email" class="admin-input" style="margin:0; max-width:300px;" placeholder="Correo electrónico" required>
+        <button type="submit" class="btn-pag" style="border-color:var(--naranja); color:var(--naranja);">Enviar Invitación</button>
+      </form>
+      <p id="invitar-msg" style="font-size:.85rem; margin-top:.8rem;"></p>
+    </div>
+  </div>
+
   <!-- Filtros admin -->
   <div class="filtros-wrap">
     <!-- Búsqueda -->

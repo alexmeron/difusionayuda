@@ -78,6 +78,18 @@ async function cargarDatosAdmin() {
   try {
     const res = await fetch('/api/anuncios?refresh=1')
     const data = await res.json()
+        const sb = getSupabaseClient();
+    const { data: { session } } = await sb.auth.getSession();
+    let rol = 'admin';
+    let nombre = 'Admin';
+    if (session && session.user && session.user.user_metadata) {
+      rol = session.user.user_metadata.rol || 'admin';
+      nombre = session.user.user_metadata.nombre || 'Admin';
+    }
+    const invitarWrap = document.getElementById('admin-invitar-wrap');
+    if (invitarWrap) {
+      invitarWrap.hidden = (rol !== 'superadmin');
+    }
     todosAnunciosAdmin = data.anuncios || []
     listaResueltosAdmin = data.resueltos || []
 
@@ -297,3 +309,53 @@ document.addEventListener('DOMContentLoaded', () => {
     mostrarDashboard()
   }
 })
+
+
+async function asignarCaso(id) {
+  try {
+    const res = await fetch('/api/admin/asignar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ id })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const reporte = listaReportesAdmin.find(r => r.id === id);
+      if (reporte) reporte.asignado_a = data.asignado_a;
+      renderAdminReportes();
+    } else {
+      alert('Error al asignar: ' + (data.error || 'Desconocido'));
+    }
+  } catch (e) {
+    alert('Error de conexión');
+  }
+}
+
+async function invitarAdmin() {
+  const nombreInput = document.getElementById('invitar-nombre');
+  const emailInput = document.getElementById('invitar-email');
+  const msgEl = document.getElementById('invitar-msg');
+  msgEl.style.color = 'var(--gtxt)';
+  msgEl.textContent = 'Enviando invitación...';
+
+  try {
+    const res = await fetch('/api/admin/invitar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ email: emailInput.value.trim(), nombre: nombreInput.value.trim() })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msgEl.style.color = 'var(--verde)';
+      msgEl.textContent = '✅ Invitación enviada correctamente.';
+      nombreInput.value = '';
+      emailInput.value = '';
+    } else {
+      msgEl.style.color = 'var(--rojo)';
+      msgEl.textContent = '❌ Error: ' + (data.error || 'No autorizado');
+    }
+  } catch (e) {
+    msgEl.style.color = 'var(--rojo)';
+    msgEl.textContent = '❌ Error de conexión';
+  }
+}
