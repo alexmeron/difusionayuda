@@ -8,6 +8,9 @@ directory = "./public"
 binding = "ASSETS"
 
 
-[[kv_namespaces]]
-binding = "KV"
-id = "31154b5bdd9149f8bdd3fe6a74a5d214"
+
+
+
+[vars]
+SUPABASE_URL = "https://qjtvpifbrvdyhzgpobyl.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_C2bn9yZQwa0KFhCl-faRfg_ZuguwVr7"

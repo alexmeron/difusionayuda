@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 
 function isPassValid(p) {
   if (!p) return false;
@@ -248,21 +249,37 @@ export default {
 
     
     
-    async function getResueltos() {
-      if (!env.KV) return RESUELTOS_DEFAULT;
-      try { return (await env.KV.get('resueltos', { type: 'json' })) || RESUELTOS_DEFAULT; }
-      catch (e) { return RESUELTOS_DEFAULT; }
+    function getSupabase(env) {
+      if (!globalThis.supabaseClient && env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+        globalThis.supabaseClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+      }
+      return globalThis.supabaseClient;
     }
-    async function getReportes() {
-      if (!env.KV) return [];
-      try { return (await env.KV.get('reportes', { type: 'json' })) || []; }
-      catch (e) { return []; }
+    
+    async function getResueltos(env) {
+      const supabase = getSupabase(env);
+      if (!supabase) return RESUELTOS_DEFAULT;
+      try {
+        const { data, error } = await supabase.from('resueltos').select('*');
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.error(e);
+        return RESUELTOS_DEFAULT;
+      }
     }
-    async function saveResueltos(data) {
-      if (env.KV) await env.KV.put('resueltos', JSON.stringify(data));
-    }
-    async function saveReportes(data) {
-      if (env.KV) await env.KV.put('reportes', JSON.stringify(data));
+    
+    async function getReportes(env) {
+      const supabase = getSupabase(env);
+      if (!supabase) return [];
+      try {
+        const { data, error } = await supabase.from('reportes').select('*');
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
     }
 
     if (url.pathname === '/api/reportar-resuelto'
@@ -272,14 +289,11 @@ export default {
         const { id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp } = body;
         if (!id) return jsonResponse({ ok: false, error: 'Falta ID' }, 400);
         
-        let reportesList = await getReportes();
-        const existe = reportesList.find(r => r.id === id);
-        if (!existe) {
-          reportesList.push({
-            id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp,
-            fechaReporte: new Date().toISOString()
+        const supabase = getSupabase(env);
+        if (supabase) {
+          await supabase.from('reportes').upsert({
+            id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp
           });
-          await saveReportes(reportesList);
         }
         return jsonResponse({ ok: true, msg: 'Reporte registrado para verificación del admin' });
       } catch (err) {
@@ -290,7 +304,7 @@ export default {
     if (url.pathname === '/api/admin/reportes' && request.method === 'GET') {
       const p = url.searchParams.get('password');
       if (!isPassValid(p)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
-      return jsonResponse(await getReportes());
+      return jsonResponse(await getReportes(env));
     }
 
     if (url.pathname === '/api/admin/descartar-reporte' && request.method === 'POST') {
@@ -298,10 +312,11 @@ export default {
         const { password, id } = await request.json();
         if (!isPassValid(password)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
         
-        let repList = await getReportes();
-        repList = repList.filter(r => r.id !== id);
-        await saveReportes(repList);
-        return jsonResponse({ ok: true, reportes: repList });
+        const supabase = getSupabase(env);
+        if (supabase) {
+          await supabase.from('reportes').delete().eq('id', id);
+        }
+        return jsonResponse({ ok: true });
       } catch (err) {
         return jsonResponse({ ok: false, error: err.message }, 500);
       }
@@ -312,29 +327,28 @@ export default {
         const { password, id, contacto, localidad, desc } = await request.json();
         if (!isPassValid(password)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
         
-        let resList = await getResueltos();
-        let repList = await getReportes();
-        const existeIdx = resList.findIndex(item => item.id === id);
+        const supabase = getSupabase(env);
+        if (!supabase) return jsonResponse({ ok: false, error: 'Supabase no configurado' }, 500);
+        
+        const { data: existe } = await supabase.from('resueltos').select('id').eq('id', id).single();
         let resuelto = false;
         
-        if (existeIdx >= 0) {
-          resList.splice(existeIdx, 1);
+        if (existe) {
+          await supabase.from('resueltos').delete().eq('id', id);
         } else {
-          resList.push({ id, contacto, localidad, desc });
-          repList = repList.filter(r => r.id !== id);
-          await saveReportes(repList);
+          await supabase.from('resueltos').insert({ id, contacto, localidad, desc });
+          await supabase.from('reportes').delete().eq('id', id);
           resuelto = true;
         }
         
-        await saveResueltos(resList);
-        return jsonResponse({ ok: true, resuelto, lista: resList });
+        return jsonResponse({ ok: true, resuelto });
       } catch (err) {
         return jsonResponse({ ok: false, error: err.message }, 500);
       }
     }
 
     if (url.pathname === '/api/resueltos') {
-      return jsonResponse(await getResueltos());
+      return jsonResponse(await getResueltos(env));
     }
 
     if (url.pathname === '/api/admin/login' && request.method === 'POST') {
