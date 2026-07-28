@@ -1,3 +1,15 @@
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient('https://qjtvpifbrvdyhzgpobyl.supabase.co', 'sb_publishable_C2bn9yZQwa0KFhCl-faRfg_ZuguwVr7');
+
+// Auth Middleware Helper
+async function checkAdminAuth(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
+  const token = authHeader.replace('Bearer ', '').trim();
+  const { data, error } = await supabase.auth.getUser(token);
+  return data && data.user ? true : false;
+}
+
 const express = require('express')
 const path    = require('path')
 const fs      = require('fs')
@@ -28,42 +40,26 @@ const REPORTES_FILE  = path.join(__dirname, 'reportes.json')
 app.use(express.json())
 
 // ── Manejo de Resueltos Persistentes ──────────────────────────────────────────
-function cargarResueltos() {
+async function getResueltos() {
   try {
-    if (fs.existsSync(RESUELTOS_FILE)) {
-      return JSON.parse(fs.readFileSync(RESUELTOS_FILE, 'utf8'))
-    }
+    const { data, error } = await supabase.from('resueltos').select('*');
+    if (error) throw error;
+    return data || [];
   } catch (e) {
-    console.error('[Resueltos] Error al leer resueltos.json:', e.message)
-  }
-  return []
-}
-
-function guardarResueltos(lista) {
-  try {
-    fs.writeFileSync(RESUELTOS_FILE, JSON.stringify(lista, null, 2), 'utf8')
-  } catch (e) {
-    console.error('[Resueltos] Error al guardar resueltos.json:', e.message)
+    console.error(e);
+    return [];
   }
 }
 
 // ── Manejo de Reportes de Usuarios ────────────────────────────────────────────
-function cargarReportes() {
+async function getReportes() {
   try {
-    if (fs.existsSync(REPORTES_FILE)) {
-      return JSON.parse(fs.readFileSync(REPORTES_FILE, 'utf8'))
-    }
+    const { data, error } = await supabase.from('reportes').select('*');
+    if (error) throw error;
+    return data || [];
   } catch (e) {
-    console.error('[Reportes] Error al leer reportes.json:', e.message)
-  }
-  return []
-}
-
-function guardarReportes(lista) {
-  try {
-    fs.writeFileSync(REPORTES_FILE, JSON.stringify(lista, null, 2), 'utf8')
-  } catch (e) {
-    console.error('[Reportes] Error al guardar reportes.json:', e.message)
+    console.error(e);
+    return [];
   }
 }
 
@@ -162,104 +158,63 @@ app.get('/api/anuncios', async (req, res) => {
     const now = Date.now()
 
     if (refresh !== '1' && cache && now - cache.ts < CACHE_TTL) {
-      return res.json({ ...cache.data, resueltos: cargarResueltos(), fromCache: true })
+      return res.json({ ...cache.data, resueltos: await getResueltos(), fromCache: true })
     }
 
     const data = await scrapeAll()
     cache = { data, ts: now }
-    res.json({ ...data, resueltos: cargarResueltos(), fromCache: false })
+    res.json({ ...data, resueltos: await getResueltos(), fromCache: false })
   } catch (err) {
     console.error('[API]', err.message)
     res.status(500).json({ error: err.message })
   }
 })
 
-app.get('/api/resueltos', (_, res) => {
-  res.json(cargarResueltos())
+app.get('/api/resueltos', async (_, res) => {
+  res.json(await getResueltos())
 })
 
 // ── API ADMIN ─────────────────────────────────────────────────────────────────
-app.post('/api/admin/login', (req, res) => {
-  let { password } = req.body
-  let passDecoded = password
-  try { passDecoded = decodeURIComponent(password) } catch(e){}
 
-  if (isPassValid(password)) {
-    return res.json({ ok: true, token: 'admin-authenticated-token' })
-  }
-  res.status(401).json({ ok: false, error: 'Contraseña incorrecta' })
-})
 
-app.get('/api/admin/reportes', (req, res) => {
-  const { password } = req.query
-  let passDecoded = password
-  try { passDecoded = decodeURIComponent(password) } catch(e){}
-
-  if (!isPassValid(password)) {
-    return res.status(401).json({ ok: false, error: 'No autorizado' })
-  }
-
-  res.json(cargarReportes())
+app.get('/api/admin/reportes', async (req, res) => {
+  if (!(await checkAdminAuth(req))) return res.status(401).json({ ok: false, error: 'No autorizado' });
+  res.json(await getReportes());
 })
 
 
-app.post('/api/reportar-resuelto', (req, res) => {
+app.post('/api/reportar-resuelto', async (req, res) => {
   const data = req.body;
   if (!data || !data.id) return res.status(400).json({ ok: false });
-  
-  let reportes = cargarReportes();
-  const existe = reportes.some(r => r.id === data.id);
-  if (!existe) {
-    reportes.push({ ...data, fechaReporte: new Date().toISOString() });
-    guardarReportes(reportes);
-  }
-  res.json({ ok: true });
+  const { id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp } = data;
+  await supabase.from('reportes').upsert({ id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp });
+  res.json({ ok: true, msg: 'Reporte registrado para verificación del admin' });
 });
 
-app.post('/api/admin/toggle-resuelto', (req, res) => {
-  const { password, id, contacto, localidad, desc } = req.body
-  let passDecoded = password
-  try { passDecoded = decodeURIComponent(password) } catch(e){}
-
-  if (!isPassValid(password)) {
-    return res.status(401).json({ ok: false, error: 'No autorizado' })
-  }
-
-  let lista = cargarResueltos()
-  const existeIdx = lista.findIndex(item => {
-    if (item.id === id) return true;
-    if (item.contacto === contacto && item.localidad === localidad && item.desc === desc) return true;
-    return false;
-  })
-
-  if (existeIdx >= 0) {
-    lista.splice(existeIdx, 1)
-    guardarResueltos(lista)
-    return res.json({ ok: true, resuelto: false, lista })
+app.post('/api/admin/toggle-resuelto', async (req, res) => {
+  if (!(await checkAdminAuth(req))) return res.status(401).json({ ok: false, error: 'No autorizado' });
+  
+  const { id, contacto, localidad, desc } = req.body;
+  const { data: existe } = await supabase.from('resueltos').select('id').eq('id', id).single();
+  let resuelto = false;
+  
+  if (existe) {
+    await supabase.from('resueltos').delete().eq('id', id);
   } else {
-    lista.push({ id, contacto, localidad, desc })
-    guardarResueltos(lista)
-
-    // Al resolver, si estaba reportado, eliminarlo de reportes
-    let reportes = cargarReportes().filter(r => r.id !== id)
-    guardarReportes(reportes)
-
-    return res.json({ ok: true, resuelto: true, lista })
+    await supabase.from('resueltos').insert({ id, contacto, localidad, desc });
+    await supabase.from('reportes').delete().eq('id', id);
+    resuelto = true;
   }
+  
+  return res.json({ ok: true, resuelto, lista: await getResueltos() });
 })
 
-app.post('/api/admin/descartar-reporte', (req, res) => {
-  const { password, id } = req.body
-  let passDecoded = password
-  try { passDecoded = decodeURIComponent(password) } catch(e){}
-
-  if (!isPassValid(password)) {
-    return res.status(401).json({ ok: false, error: 'No autorizado' })
-  }
-
-  let reportes = cargarReportes().filter(r => r.id !== id)
-  guardarReportes(reportes)
-  res.json({ ok: true, reportes })
+app.post('/api/admin/descartar-reporte', async (req, res) => {
+  if (!(await checkAdminAuth(req))) return res.status(401).json({ ok: false, error: 'No autorizado' });
+  
+  const { id } = req.body;
+  await supabase.from('reportes').delete().eq('id', id);
+  res.json({ ok: true });
 })
 
 // ── RUTAS Y ESTÁTICOS ─────────────────────────────────────────────────────────

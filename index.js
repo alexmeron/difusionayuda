@@ -240,7 +240,7 @@ export default {
           anuncios,
           totalNecesita,
           totalOfrece,
-          resueltos: (env.KV ? (await env.KV.get('resueltos', { type: 'json' })) || RESUELTOS_DEFAULT : RESUELTOS_DEFAULT),
+          resueltos: await getResueltos(env),
           ultimaActualizacion: new Date().toISOString()});
       } catch (err) {
         return jsonResponse({ error: err.message }, 500);
