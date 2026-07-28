@@ -1,13 +1,78 @@
 /* ════════════════════════════════════════════════════
-   Incendio Monitor — Admin JS (con Verificación de Reportes)
+   Incendio Monitor — Admin JS (Supabase Auth)
    ════════════════════════════════════════════════════ */
 
-
-const supabaseUrl = 'https://qjtvpifbrvdyhzgpobyl.supabase.co';
-const supabaseKey = 'sb_publishable_C2bn9yZQwa0KFhCl-faRfg_ZuguwVr7';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// Supabase se inicializa tras el CDN, dentro de DOMContentLoaded
+const SUPABASE_URL = 'https://qjtvpifbrvdyhzgpobyl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_C2bn9yZQwa0KFhCl-faRfg_ZuguwVr7';
+let supabaseClient = null;
 
 let authToken = localStorage.getItem('sb-auth-token') || '';
+let todosAnunciosAdmin = [];
+let listaResueltosAdmin = [];
+let listaReportesAdmin  = [];
+let filtroTipoAdmin       = '';   // '' | 'necesito' | 'ofrezco'
+let ocultarResueltosAdmin  = true;
+
+
+function getSupabaseClient() {
+  if (!supabaseClient) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+  return supabaseClient;
+}
+
+async function loginAdmin() {
+  const emailInput = document.getElementById('admin-email-input');
+  const passInput  = document.getElementById('admin-pass-input');
+  const errEl      = document.getElementById('login-error');
+  errEl.hidden = true;
+
+  try {
+    const sb = getSupabaseClient();
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: emailInput.value.trim(),
+      password: passInput.value
+    });
+    if (error) throw error;
+
+    authToken = data.session.access_token;
+    localStorage.setItem('sb-auth-token', authToken);
+    mostrarDashboard();
+  } catch (e) {
+    errEl.textContent = e.message || 'Error de autenticación';
+    errEl.hidden = false;
+  }
+}
+
+async function logoutAdmin() {
+  const sb = getSupabaseClient();
+  await sb.auth.signOut();
+  localStorage.removeItem('sb-auth-token');
+  authToken = '';
+  document.getElementById('section-dashboard').hidden = true;
+  document.getElementById('section-login').hidden = false;
+}
+
+
+function norm(str) {
+  return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+function esResueltoAdmin(anuncio) {
+  const d = norm(anuncio.descripcion);
+  const l = norm(anuncio.localidad + ' ' + anuncio.provincia);
+  const c = norm(anuncio.contacto);
+
+  return listaResueltosAdmin.some(r => {
+    if (r.id && r.id === anuncio.id) return true;
+    if (!r.contacto && !r.localidad && !r.desc) return false;
+    if (r.contacto  && !c.includes(norm(r.contacto)))  return false;
+    if (r.localidad && !l.includes(norm(r.localidad))) return false;
+    if (r.desc      && !d.includes(norm(r.desc)))      return false;
+    return true;
+  });
+}
 
 async function cargarDatosAdmin() {
   try {
