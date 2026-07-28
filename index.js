@@ -301,16 +301,27 @@ export default {
       }
     }
 
+    
+    // Auth Middleware Helper
+    async function checkAdminAuth(request, env) {
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
+      const token = authHeader.replace('Bearer ', '').trim();
+      const supabase = getSupabase(env);
+      if (!supabase) return false;
+      const { data, error } = await supabase.auth.getUser(token);
+      return data && data.user ? true : false;
+    }
+
     if (url.pathname === '/api/admin/reportes' && request.method === 'GET') {
-      const p = url.searchParams.get('password');
-      if (!isPassValid(p)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+      if (!(await checkAdminAuth(request, env))) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
       return jsonResponse(await getReportes(env));
     }
 
     if (url.pathname === '/api/admin/descartar-reporte' && request.method === 'POST') {
       try {
-        const { password, id } = await request.json();
-        if (!isPassValid(password)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+        if (!(await checkAdminAuth(request, env))) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+        const { id } = await request.json();
         
         const supabase = getSupabase(env);
         if (supabase) {
@@ -324,8 +335,8 @@ export default {
 
     if (url.pathname === '/api/admin/toggle-resuelto' && request.method === 'POST') {
       try {
-        const { password, id, contacto, localidad, desc } = await request.json();
-        if (!isPassValid(password)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+        if (!(await checkAdminAuth(request, env))) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
+        const { id, contacto, localidad, desc } = await request.json();
         
         const supabase = getSupabase(env);
         if (!supabase) return jsonResponse({ ok: false, error: 'Supabase no configurado' }, 500);
@@ -351,17 +362,7 @@ export default {
       return jsonResponse(await getResueltos(env));
     }
 
-    if (url.pathname === '/api/admin/login' && request.method === 'POST') {
-      try {
-        const { password } = await request.json();
-        let passDecoded = password;
-        try { passDecoded = decodeURIComponent(password); } catch(e){}
-        if (password === ADMIN_PASSWORD || passDecoded === ADMIN_PASSWORD || password === 'R8J5WXL5%2025%') {
-          return jsonResponse({ ok: true, token: 'admin-token' });
-        }
-      } catch(e){}
-      return jsonResponse({ ok: false, error: 'Contraseña incorrecta' }, 401);
-    }
+    
 
     // Servir estáticos desde el binding ASSETS
     if (env.ASSETS) {

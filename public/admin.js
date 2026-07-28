@@ -2,62 +2,12 @@
    Incendio Monitor — Admin JS (con Verificación de Reportes)
    ════════════════════════════════════════════════════ */
 
-let adminPass = localStorage.getItem('admin_pass') || ''
-let todosAnunciosAdmin = []
-let listaResueltosAdmin = []
-let listaReportesAdmin  = []
 
-let filtroTipoAdmin       = ''   // '' | 'necesito' | 'ofrezco'
-let ocultarResueltosAdmin  = true
+const supabaseUrl = 'https://qjtvpifbrvdyhzgpobyl.supabase.co';
+const supabaseKey = 'sb_publishable_C2bn9yZQwa0KFhCl-faRfg_ZuguwVr7';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-function norm(str) {
-  return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-}
-
-function esResueltoAdmin(anuncio) {
-  const d = norm(anuncio.descripcion)
-  const l = norm(anuncio.localidad + ' ' + anuncio.provincia)
-  const c = norm(anuncio.contacto)
-
-  return listaResueltosAdmin.some(r => {
-    if (r.id && r.id === anuncio.id) return true;
-    if (!r.contacto && !r.localidad && !r.desc) return false;
-    if (r.contacto  && !c.includes(norm(r.contacto)))  return false
-    if (r.localidad && !l.includes(norm(r.localidad))) return false
-    if (r.desc      && !d.includes(norm(r.desc)))      return false
-    return true
-  })
-}
-
-async function loginAdmin() {
-  const passInput = document.getElementById('admin-pass-input').value
-  const errEl = document.getElementById('login-error')
-  errEl.hidden = true
-
-  try {
-    const res = await fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: passInput })
-    })
-    const data = await res.json()
-    if (!res.ok || !data.ok) throw new Error(data.error || 'Error de autenticación')
-
-    adminPass = passInput
-    localStorage.setItem('admin_pass', adminPass)
-    mostrarDashboard()
-  } catch (e) {
-    errEl.textContent = e.message
-    errEl.hidden = false
-  }
-}
-
-function logoutAdmin() {
-  localStorage.removeItem('admin_pass')
-  adminPass = ''
-  document.getElementById('section-dashboard').hidden = true
-  document.getElementById('section-login').hidden = false
-}
+let authToken = localStorage.getItem('sb-auth-token') || '';
 
 async function cargarDatosAdmin() {
   try {
@@ -67,7 +17,9 @@ async function cargarDatosAdmin() {
     listaResueltosAdmin = data.resueltos || []
 
     // Cargar reportes pendientes de verificación
-    const resRep = await fetch(`/api/admin/reportes?password=${encodeURIComponent(adminPass)}`)
+    const resRep = await fetch('/api/admin/reportes', {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    })
     if (resRep.ok) {
       listaReportesAdmin = await resRep.json()
     }
@@ -143,8 +95,8 @@ async function descartarReporteAdmin(id) {
   try {
     const res = await fetch('/api/admin/descartar-reporte', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPass, id })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ id })
     })
     const data = await res.json()
     if (data.ok) {
@@ -164,9 +116,9 @@ async function toggleResueltoAnuncio(anuncioOrId) {
   try {
     const res = await fetch('/api/admin/toggle-resuelto', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
       body: JSON.stringify({
-        password: adminPass,
+        
         id: anuncio.id,
         contacto: anuncio.contacto || '',
         localidad: anuncio.localidad || anuncio.provincia || '',
@@ -276,7 +228,7 @@ function setAdminOcultarResueltos(checked) {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  if (adminPass) {
+  if (authToken) {
     mostrarDashboard()
   }
 })

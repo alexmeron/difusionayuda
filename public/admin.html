@@ -120,7 +120,8 @@
   <h2 style="font-family:'Bricolage Grotesque',sans-serif; margin:.5rem 0 0;">Panel de Administración</h2>
   <p style="font-size:.82rem; color:var(--gtxt); margin-top:.2rem;">Introduce la contraseña para gestionar los anuncios.</p>
   <form onsubmit="event.preventDefault(); loginAdmin()">
-    <input type="password" id="admin-pass-input" class="admin-input" placeholder="Contraseña de admin" autofocus autocomplete="current-password">
+    <input type="email" id="admin-email-input" class="admin-input" placeholder="Correo electrónico" autofocus autocomplete="username" required>
+    <input type="password" id="admin-pass-input" class="admin-input" placeholder="Contraseña" autocomplete="current-password" required>
     <button type="submit" class="btn-admin-login">Acceder al Panel</button>
   </form>
   <p id="login-error" style="color:var(--rojo); font-size:.82rem; margin-top:.8rem;" hidden></p>
@@ -179,6 +180,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="admin.js?v=1785179998815"></script>
 </body>
 </html>
