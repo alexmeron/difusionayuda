@@ -148,6 +148,10 @@ function renderAdminReportes() {
         <div style="display:flex; gap:.4rem; flex-wrap:wrap; align-items:center;">
           ${r.telefono ? `<a href="tel:${r.telefono}" class="btn-accion btn-llamar" style="font-size:.75rem;">📞 Llamar p/ verificar</a>` : ''}
           ${r.whatsapp ? `<a href="${r.whatsapp}" target="_blank" rel="noopener" class="btn-accion btn-wasap" style="font-size:.75rem;">💬 WhatsApp</a>` : ''}
+          ${r.asignado_a 
+            ? \`<button class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem; border-color:var(--g3); color:var(--gtxt); cursor:default;" disabled>👤 Asignado a: ${r.asignado_a}</button>\`
+            : \`<button onclick="asignarCaso('${r.id}')" class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem; border-color:var(--naranja); color:var(--naranja);">✋ Asignarme seguimiento</button>\`
+          }
           <button onclick="aprobarReporteAdmin('${r.id}')" class="btn-toggle-admin btn-toggle-oculto" style="font-size:.75rem; padding:.4rem .8rem;">✅ Aprobar y Ocultar</button>
           <button onclick='descartarReporteAdmin("${r.id}")' class="btn-pag" style="font-size:.75rem; padding:.4rem .7rem;">❌ Descartar</button>
         </div>
