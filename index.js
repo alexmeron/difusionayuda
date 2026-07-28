@@ -151,7 +151,7 @@ function parseHTMLTarjeta(htmlStr, tipoDefault) {
     const descMatch = cardHtml.match(/class="tarjeta-desc"[^>]*>([\s\S]*?)<\/p>/i);
     const descripcion = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : '';
 
-    const conMatch = cardHtml.match(/class="tarjeta-nombre"[^>]*>([\s\S]*?)<\/p>/i);
+    const conMatch = cardHtml.match(/class="tarjeta-nombre"[^>]*>([\s\S]*?)<\/(?:span|p|div)>/i);
     const contacto = conMatch ? conMatch[1].replace(/<[^>]+>/g, '').replace('Contacto:','').trim() : '';
 
     const fecMatch = cardHtml.match(/class="tarjeta-fecha"[^>]*>([\s\S]*?)<\/p>/i);
