@@ -239,7 +239,7 @@ export default {
           anuncios,
           totalNecesita,
           totalOfrece,
-          resueltos: globalThis.inMemoryResueltos || RESUELTOS_DEFAULT,
+          resueltos: (env.KV ? (await env.KV.get('resueltos', { type: 'json' })) || RESUELTOS_DEFAULT : RESUELTOS_DEFAULT),
           ultimaActualizacion: new Date().toISOString()});
       } catch (err) {
         return jsonResponse({ error: err.message }, 500);
@@ -247,22 +247,39 @@ export default {
     }
 
     
-    // Add memory storage for Cloudflare Worker
-    if (!globalThis.inMemoryReportes) globalThis.inMemoryReportes = [];
-    if (!globalThis.inMemoryResueltos) globalThis.inMemoryResueltos = [...RESUELTOS_DEFAULT];
+    
+    async function getResueltos() {
+      if (!env.KV) return RESUELTOS_DEFAULT;
+      try { return (await env.KV.get('resueltos', { type: 'json' })) || RESUELTOS_DEFAULT; }
+      catch (e) { return RESUELTOS_DEFAULT; }
+    }
+    async function getReportes() {
+      if (!env.KV) return [];
+      try { return (await env.KV.get('reportes', { type: 'json' })) || []; }
+      catch (e) { return []; }
+    }
+    async function saveResueltos(data) {
+      if (env.KV) await env.KV.put('resueltos', JSON.stringify(data));
+    }
+    async function saveReportes(data) {
+      if (env.KV) await env.KV.put('reportes', JSON.stringify(data));
+    }
 
-    if (url.pathname === '/api/reportar-resuelto' && request.method === 'POST') {
+    if (url.pathname === '/api/reportar-resuelto'
+ && request.method === 'POST') {
       try {
         const body = await request.json();
         const { id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp } = body;
         if (!id) return jsonResponse({ ok: false, error: 'Falta ID' }, 400);
         
-        const existe = globalThis.inMemoryReportes.find(r => r.id === id);
+        let reportesList = await getReportes();
+        const existe = reportesList.find(r => r.id === id);
         if (!existe) {
-          globalThis.inMemoryReportes.push({
+          reportesList.push({
             id, contacto, localidad, provincia, categoria, descripcion, telefono, whatsapp,
             fechaReporte: new Date().toISOString()
           });
+          await saveReportes(reportesList);
         }
         return jsonResponse({ ok: true, msg: 'Reporte registrado para verificación del admin' });
       } catch (err) {
@@ -273,7 +290,7 @@ export default {
     if (url.pathname === '/api/admin/reportes' && request.method === 'GET') {
       const p = url.searchParams.get('password');
       if (!isPassValid(p)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
-      return jsonResponse(globalThis.inMemoryReportes);
+      return jsonResponse(await getReportes());
     }
 
     if (url.pathname === '/api/admin/descartar-reporte' && request.method === 'POST') {
@@ -281,8 +298,10 @@ export default {
         const { password, id } = await request.json();
         if (!isPassValid(password)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
         
-        globalThis.inMemoryReportes = globalThis.inMemoryReportes.filter(r => r.id !== id);
-        return jsonResponse({ ok: true, reportes: globalThis.inMemoryReportes });
+        let repList = await getReportes();
+        repList = repList.filter(r => r.id !== id);
+        await saveReportes(repList);
+        return jsonResponse({ ok: true, reportes: repList });
       } catch (err) {
         return jsonResponse({ ok: false, error: err.message }, 500);
       }
@@ -293,25 +312,29 @@ export default {
         const { password, id, contacto, localidad, desc } = await request.json();
         if (!isPassValid(password)) return jsonResponse({ ok: false, error: 'No autorizado' }, 401);
         
-        const existeIdx = globalThis.inMemoryResueltos.findIndex(item => item.id === id);
+        let resList = await getResueltos();
+        let repList = await getReportes();
+        const existeIdx = resList.findIndex(item => item.id === id);
         let resuelto = false;
         
         if (existeIdx >= 0) {
-          globalThis.inMemoryResueltos.splice(existeIdx, 1);
+          resList.splice(existeIdx, 1);
         } else {
-          globalThis.inMemoryResueltos.push({ id, contacto, localidad, desc });
-          globalThis.inMemoryReportes = globalThis.inMemoryReportes.filter(r => r.id !== id);
+          resList.push({ id, contacto, localidad, desc });
+          repList = repList.filter(r => r.id !== id);
+          await saveReportes(repList);
           resuelto = true;
         }
         
-        return jsonResponse({ ok: true, resuelto, lista: globalThis.inMemoryResueltos });
+        await saveResueltos(resList);
+        return jsonResponse({ ok: true, resuelto, lista: resList });
       } catch (err) {
         return jsonResponse({ ok: false, error: err.message }, 500);
       }
     }
 
     if (url.pathname === '/api/resueltos') {
-      return jsonResponse(globalThis.inMemoryResueltos || RESUELTOS_DEFAULT);
+      return jsonResponse(await getResueltos());
     }
 
     if (url.pathname === '/api/admin/login' && request.method === 'POST') {
