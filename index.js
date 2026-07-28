@@ -218,6 +218,22 @@ export default {
     }
 
     // API Routes
+    
+const REBECA_AD = {
+  id: 'necesito-rebeca-ruiz',
+  tipo: 'necesito',
+  categoria: 'Perros',
+  catEmoji: '🐕',
+  provincia: 'Madrid',
+  localidad: 'Pelayos',
+  descripcion: 'Tengo 2 perros. Una mastín de 50kg con las patas quemadas que no puede caminar y necesita curas. La otra es un galgo y esta bien. Y unos cuantos gatos que estan bien. La finca donde estaban se ha quemado y necesito que me los cuiden hasta que vea donde puedo tenerlos por un tiempo.',
+  contacto: 'Rebeca Ruiz Guerrero',
+  telefono: '633818486',
+  whatsapp: 'https://wa.me/34633818486',
+  fecha: 'hace 1 día',
+  fechaSeg: 86400
+};
+
     if (url.pathname === '/api/anuncios') {
       try {
         const BASE = 'https://incendio.sepv.es/';
@@ -231,7 +247,7 @@ export default {
 
         const listaNec = parseHTMLTarjeta(htmlNec, 'necesito');
         const listaOff = parseHTMLTarjeta(htmlOff, 'ofrezco');
-        const anuncios = [...listaNec, ...listaOff].sort((a, b) => a.fechaSeg - b.fechaSeg);
+        const anuncios = [...listaNec, ...listaOff, REBECA_AD].sort((a, b) => a.fechaSeg - b.fechaSeg);
 
         let totalNecesita = extraerNumeroContador(htmlNec, 'peticion') || 71;
         let totalOfrece = extraerNumeroContador(htmlOff, 'oferta') || 2515;

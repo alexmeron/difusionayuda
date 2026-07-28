@@ -145,6 +145,22 @@ async function scrapePage(url) {
   return { lista, totalNecesita, totalOfrece }
 }
 
+
+const REBECA_AD = {
+  id: 'necesito-rebeca-ruiz',
+  tipo: 'necesito',
+  categoria: 'Perros',
+  catEmoji: '🐕',
+  provincia: 'Madrid',
+  localidad: 'Pelayos',
+  descripcion: 'Tengo 2 perros. Una mastín de 50kg con las patas quemadas que no puede caminar y necesita curas. La otra es un galgo y esta bien. Y unos cuantos gatos que estan bien. La finca donde estaban se ha quemado y necesito que me los cuiden hasta que vea donde puedo tenerlos por un tiempo.',
+  contacto: 'Rebeca Ruiz Guerrero',
+  telefono: '633818486',
+  whatsapp: 'https://wa.me/34633818486',
+  fecha: 'hace 1 día',
+  fechaSeg: 86400
+};
+
 async function scrapeAll() {
   const BASE = 'https://incendio.sepv.es/'
 
@@ -153,7 +169,7 @@ async function scrapeAll() {
     scrapePage(BASE + '?tipo=ofrezco'),
   ])
 
-  const anuncios = [...necesita.lista, ...ofrece.lista]
+  const anuncios = [...necesita.lista, ...ofrece.lista, REBECA_AD]
     .sort((a, b) => a.fechaSeg - b.fechaSeg)
 
   return {
